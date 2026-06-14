@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Código de Ejemplo (tarea3)
 Para ejecutar el ejemplo tarea3 primero debemos compilar (en la carpeta raíz)
 ````
@@ -23,4 +24,3 @@ despues te encontras con el siguiente menu:
 
 3 opciones con las cuales te indicaran los pasos a realizar para salir del laberinto
 y la ultima que es para cerrar el menu.
-

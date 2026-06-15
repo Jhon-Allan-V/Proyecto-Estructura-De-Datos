@@ -8,10 +8,6 @@
 #include <string.h>
 #include <time.h>
 
-//#define FILA x
-//#define COL y
-//#define OBSTACULO 0
-//#define CAMINO 1
 
 // Definición de la estructura para el estado del puzzle
 typedef struct {
@@ -263,83 +259,50 @@ void best_first(State *estado_inicial){
 }
 
 int main() {
-    // Inicializar la semilla de aleatoriedad
-    srand(time(NULL));
 
-    int maze[N][N];
-    int dificultad;
+    // pedir al usuario que digite alguna opcion
 
-    // Solicitar la dificultad al usuario con validación
-    do {
-        printf("Ingrese la dificultad del laberinto (porcentaje de obstáculos, 0 a 100): ");
-        scanf("%d", &dificultad);
-        if (dificultad < 0 || dificultad > 100) {
-            printf("Error: Por favor ingrese un valor válido entre 0 y 100.\n");
-        }
-    } while (dificultad < 0 || dificultad > 100);
-
-    // Estado inicial del puzzle
-    // Laberinto generado con la dificultad ingresada por el usuario
-    State estado_inicial = crearEstadoInicial(maze, dificultad);
-
-    // Imprime el estado inicial
-    printf("\nEstado inicial del puzzle:\n");
-    imprimirEstado(&estado_inicial);
-
-    printf("Distancia L1: %d\n", distancia_L1(&estado_inicial));
-/*
-    // Ejemplo de heap (cola con prioridad)
-    printf("\n***** EJEMPLO USO DE HEAP ******\nCreamos un Heap e insertamos 3 elementos con distinta prioridad\n");
-    Heap* heap = heap_create();
-    char* data = strdup("Cinco");
-    printf("Insertamos el elemento %s con prioridad -5\n", data);
-    heap_push(heap, data, -5 );
-    data = strdup("Seis");
-    printf("Insertamos el elemento %s con prioridad -6\n", data);
-    heap_push(heap, data, -6 );
-    data = strdup("Siete");
-    printf("Insertamos el elemento %s con prioridad -7\n", data);
-    heap_push(heap, data, -7 );
-
-    printf("\nLos elementos salen del Heap ordenados de mayor a menor prioridad\n");
-    while (heap_top(heap) != NULL){
-        printf("Top: %s\n", (char*) heap_top(heap));
-        heap_pop(heap);
-    }
-    printf("No hay más elementos en el Heap\n");
-*/
     char opcion;
     do {
-        //printf("\npuzzle:\n");
-        //imprimirEstado(&estado_inicial);
 
-        printf("\n\n***** EJEMPLO MENU ******\n");
+        printf("\n\n***** ValSearchpo ******\n");
         puts("========================================");
-        puts("     Escoge método de búsqueda");
+        puts("        Escoge alguna opcion            ");
         puts("========================================");
 
-        puts("1) Búsqueda en Profundidad");
-        puts("2) Buscar en Anchura");
-        puts("3) Buscar Mejor Primero");
-        puts("4) Salir");
+        puts("1) Cargar Datos");
+        puts("2) Configuracion Inicial");
+        puts("3) Calcular Ruta");
+        puts("4) Mostrar Ruta");
+        puts("5) Reportar Accidente");
+        puts("6) Salir");
 
         printf("Ingrese su opción: ");
         scanf(" %c", &opcion);
 
         switch (opcion) {
         case '1':
-            dfs(&estado_inicial);
+            cargarDatos();
             break;
         case '2':
-            bfs(&estado_inicial);
+            configuracionInicial();
             break;
         case '3':
-            best_first(&estado_inicial);
+            calcularRuta();
+            break;
+        case '4':
+            mostrarRuta();
+            break;
+        case '5':
+            reportarAccidente();
+            break;
+        default:
+            printf("\nOpcion No Valida.\n");
             break;
         }
 
         // Evitamos pausar y limpiar pantalla si el usuario eligió salir
-        if (opcion != '4') {
+        if (opcion != '6') {
             presioneTeclaParaContinuar();
             limpiarPantalla();
         }

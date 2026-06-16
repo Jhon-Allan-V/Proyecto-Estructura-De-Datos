@@ -19,8 +19,8 @@ typedef struct {
 } Lugar;
 
 typedef struct {
-    int origen;
-    int destino;
+    int origen; //id donde comienza la ruta
+    int destino; //id donde finaliza la ruta
 
     float distancia_km;
 
@@ -29,28 +29,35 @@ typedef struct {
     float tiempoPie;
 
     float combustibleAuto;
-} Conexion;
+} Conexion; //calle entre dos puntos
 
 typedef struct {
-    Lugar *lugar;
-    List *conexiones;
-} Vertice;
+    Lugar lugar; //informacion con respecto al lugar
+    List *conexiones; //lista de rutas con respecto al lugar
+} Vertice; //nodo del grafo
 
 typedef struct {
-    List *vertices;
+    List *vertices; //lista de todos los lugares
 
-    int cantidadVertices;
-    int cantidadAristas;
+    int cantidadVertices; //cantidad de lugares
+    int cantidadAristas; //cantidad de rutas
 } Grafo;
 
 typedef struct {
     Grafo *grafo;
 
-    int totalLugares;
-    int totalRutas;
+    char archivoLugares[MAX];
+    char archivoRutas[MAX];
 } State;
 
-typedef struct { int accionX, accionY; } accion;
+typedef struct {
+    int origen;
+    int destino;
+
+    float distancia;
+
+    char calle[MAX];
+} accion;
 
 int distancia_L1(State* state) {
     return abs(state->x - (N-1)) + abs(state->y - (N-1));

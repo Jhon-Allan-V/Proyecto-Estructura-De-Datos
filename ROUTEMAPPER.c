@@ -8,14 +8,46 @@
 #include <string.h>
 #include <time.h>
 
+#define MAX 256
 
-// Definición de la estructura para el estado del puzzle
 typedef struct {
-    int maze[N][N]; // Matriz NxN que representa el tablero
-    int x;    // Posición x del agente
-    int y;    // Posición x del agente
-    int steps; // Pasos realizados hasta la posición actual
-    List* actions; //Secuencia de movimientos para llegar al estado
+    int id;
+    char nombre[MAX];
+
+    double latitud;
+    double longitud;
+} Lugar;
+
+typedef struct {
+    int origen;
+    int destino;
+
+    float distancia_km;
+
+    float tiempoAuto;
+    float tiempoBici;
+    float tiempoPie;
+
+    float combustibleAuto;
+} Conexion;
+
+typedef struct {
+    Lugar *lugar;
+    List *conexiones;
+} Vertice;
+
+typedef struct {
+    List *vertices;
+
+    int cantidadVertices;
+    int cantidadAristas;
+} Grafo;
+
+typedef struct {
+    Grafo *grafo;
+
+    int totalLugares;
+    int totalRutas;
 } State;
 
 typedef struct { int accionX, accionY; } accion;

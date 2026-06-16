@@ -88,6 +88,7 @@ void imprimirEstado(const State *estado) {
 }
 
 void imprimirCamino(const State *estado){
+
 }
 
 State *crearEstadoInicial(){

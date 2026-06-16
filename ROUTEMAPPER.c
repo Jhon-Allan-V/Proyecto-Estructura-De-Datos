@@ -67,10 +67,6 @@ int distancia_L1(State* state) {
 }
 */
 
-int esSolucionFinal(State *actual){
-    return actual -> x == N-1 && actual -> y == N-1;
-}
-
 int pilaEstaVacia(Stack *pila){
     return stack_top(pila) == NULL;
 }
@@ -85,129 +81,39 @@ int heapEstaVacia(Heap *heap){
 
 // Función para imprimir el estado actual
 void imprimirEstado(const State *estado) {
+    if (estado && estado->grafo)
+        printf("Grafo con %d vertices y %d aristas\n",
+               estado->grafo->cantidadVertices,
+               estado->grafo->cantidadAristas);
 }
 
-void imprimirCamino(const State *estado){
-
-}
-
-State *crearEstadoInicial(){
-}
-
-State *transition(State *actual){
-}
-
-List *getAdjNodes(State *actual){
-}
-
-void dfs(State *estado_inicial){
-
-    Stack *pila = stack_create(NULL);
-
-    int visitado[N][N] = {0};
-
-    stack_push(pila, estado_inicial);
-
-    while (!pilaEstaVacia(pila)){
-
-        State *actual = stack_top(pila);
-        stack_pop(pila);
-
-        if (visitado[actual -> x][actual -> y]) continue;
-
-        visitado[actual -> x][actual -> y] = 1;
-
-        if (esSolucionFinal(actual)){
-            printf("\nCamino encontrado B)\n");
-            imprimirCamino(actual);
-            return;
-        }
-
-        List *vecinos = getAdjNodes(actual);
-
-        State *vecino = list_first(vecinos);
-
-        while (vecino != NULL){
-            stack_push(pila, vecino);
-            vecino = list_next(vecinos);
-        }
+void imprimirCamino(List *camino){
+    if (!camino) return;
+    Vertice *v = list_first(camino);
+    while (v != NULL) {
+        printf("  -> %s\n", v->lugar.nombre);
+        v = list_next(camino);
     }
-    printf("\nCamino NO encontrado B(\n");
 }
 
-void bfs(State *estado_inicial){
-    Queue *cola = queue_create(NULL);
-
-    int visitado[N][N] = {0};
-
-    queue_insert(cola, estado_inicial);
-
-    while (!colaEstaVacia(cola)){
-
-        State *actual = queue_front(cola);
-        queue_remove(cola);
-
-        if (visitado[actual -> x][actual -> y]) continue;
-
-        visitado[actual -> x][actual -> y] = 1;
-
-        if (esSolucionFinal(actual)){
-            printf("\nCamino encontrado B)\n");
-            imprimirCamino(actual);
-            return;
-        }
-
-        List *vecinos = getAdjNodes(actual);
-
-        State *vecino = list_first(vecinos);
-
-        while (vecino != NULL){
-            queue_insert(cola, vecino);
-            vecino = list_next(vecinos);
-        }
-    }
-    printf("\nCamino NO encontrado B(\n");
+void cargarDatos(){
+    printf("Funcion cargarDatos() por implementar.\n");
 }
 
-void best_first(State *estado_inicial){
+void configuracionInicial(){
+    printf("Funcion configuracionInicial() por implementar.\n");
+}
 
-    Heap* heap = heap_create();
+void calcularRuta(){
+    printf("Funcion calcularRuta() por implementar.\n");
+}
 
-    int visitado[N][N] = {0};
+void mostrarRuta(){
+    printf("Funcion mostrarRuta() por implementar.\n");
+}
 
-    //heap_push(Heap* pq, void* data, int priority);
-    heap_push(heap, estado_inicial, -1 * distancia_L1(estado_inicial));
-
-    while (!heapEstaVacia(heap)){
-
-        State *actual = heap_top(heap);
-        heap_pop(heap);
-
-        if (visitado[actual -> x][actual -> y]) continue;
-
-        visitado[actual -> x][actual -> y] = 1;
-
-        if (esSolucionFinal(actual)){
-            printf("\nCamino encontrado B)\n");
-            imprimirCamino(actual);
-            return;
-        }
-        //obtener soluciones
-        List *vecinos = getAdjNodes(actual);
-
-        State *vecino = list_first(vecinos);
-
-        //recorrer estados de la lista vecinos
-        while (vecino != NULL){
-
-            int prioridad = -1 * distancia_L1(vecino);
-
-            heap_push(heap, vecino, prioridad);
-
-            vecino = list_next(vecinos);
-        }
-    }
-    printf("\nCamino NO encontrado B(\n");
+void reportarAccidente(){
+    printf("Funcion reportarAccidente() por implementar.\n");
 }
 
 int main() {
@@ -229,7 +135,7 @@ int main() {
         puts("5) Reportar Accidente");
         puts("6) Salir");
 
-        printf("Ingrese su opción: ");
+        printf("Ingrese su opcion: ");
         scanf(" %c", &opcion);
 
         switch (opcion) {
@@ -248,6 +154,9 @@ int main() {
         case '5':
             reportarAccidente();
             break;
+        case '6':
+            printf("\nHasta luego!\n");
+            break;
         default:
             printf("\nOpcion No Valida.\n");
             break;
@@ -259,7 +168,7 @@ int main() {
             limpiarPantalla();
         }
 
-  } while (opcion != '4');
+  } while (opcion != '6');
 
   return 0;
 }

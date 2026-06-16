@@ -19,8 +19,8 @@ typedef struct {
 } Lugar;
 
 typedef struct {
-    int origen;
-    int destino;
+    int origen; //id donde comienza la ruta
+    int destino; //id donde finaliza la ruta
 
     float distancia_km;
 
@@ -29,18 +29,18 @@ typedef struct {
     float tiempoPie;
 
     float combustibleAuto;
-} Conexion;
+} Conexion; //calle entre dos puntos
 
 typedef struct {
-    Lugar lugar;
-    List *conexiones;
-} Vertice;
+    Lugar lugar; //informacion con respecto al lugar
+    List *conexiones; //lista de rutas con respecto al lugar
+} Vertice; //nodo del grafo
 
 typedef struct {
-    List *vertices;
+    List *vertices; //lista de todos los lugares
 
-    int cantidadVertices;
-    int cantidadAristas;
+    int cantidadVertices; //cantidad de lugares
+    int cantidadAristas; //cantidad de rutas
 } Grafo;
 
 typedef struct {
@@ -49,6 +49,23 @@ typedef struct {
     char archivoLugares[MAX];
     char archivoRutas[MAX];
 } State;
+
+/*
+typedef struct {
+    int origen;
+    int destino;
+
+    float distancia;
+
+    char calle[MAX];
+} accion;
+ */
+
+ /*
+int distancia_L1(State* state) {
+    return abs(state->x - (N-1)) + abs(state->y - (N-1));
+}
+*/
 
 int pilaEstaVacia(Stack *pila){
     return stack_top(pila) == NULL;
@@ -62,6 +79,7 @@ int heapEstaVacia(Heap *heap){
     return heap_top(heap) == NULL;
 }
 
+// Función para imprimir el estado actual
 void imprimirEstado(const State *estado) {
     if (estado && estado->grafo)
         printf("Grafo con %d vertices y %d aristas\n",
@@ -99,6 +117,8 @@ void reportarAccidente(){
 }
 
 int main() {
+
+    // pedir al usuario que digite alguna opcion
 
     char opcion;
     do {
@@ -142,6 +162,7 @@ int main() {
             break;
         }
 
+        // Evitamos pausar y limpiar pantalla si el usuario eligió salir
         if (opcion != '6') {
             presioneTeclaParaContinuar();
             limpiarPantalla();

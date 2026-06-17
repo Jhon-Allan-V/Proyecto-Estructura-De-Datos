@@ -8,6 +8,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "libSqlite3/sqlite3.h" //libreria para consultar info en data/chile/chile.gpkg
+
 #define MAX 256
 
 typedef struct {

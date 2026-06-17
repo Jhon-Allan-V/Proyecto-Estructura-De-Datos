@@ -12,6 +12,7 @@
 
 #define MAX 256
 
+
 typedef struct {
     int id;
     char nombre[MAX];
@@ -68,7 +69,7 @@ int distancia_L1(State* state) {
     return abs(state->x - (N-1)) + abs(state->y - (N-1));
 }
 */
-
+/*
 int pilaEstaVacia(Stack *pila){
     return stack_top(pila) == NULL;
 }
@@ -96,7 +97,7 @@ void imprimirCamino(List *camino){
         printf("  -> %s\n", v->lugar.nombre);
         v = list_next(camino);
     }
-}
+}*/
 
 void cargarDatos(){
     printf("Funcion cargarDatos() por implementar.\n");

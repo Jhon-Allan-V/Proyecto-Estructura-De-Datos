@@ -7,7 +7,7 @@
 #include <string.h>
 #include "list.h"
 
-#define N 10
+#define LIM 10
 
 /**
  * Función para leer y parsear una línea de un archivo CSV en campos
@@ -49,6 +49,6 @@ void limpiarPantalla();
 
 void presioneTeclaParaContinuar();
 
-void generate_maze(int maze[N][N], int difficulty);
+void generate_maze(int maze[LIM][LIM], int difficulty);
 
 #endif

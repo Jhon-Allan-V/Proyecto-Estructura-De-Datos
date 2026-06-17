@@ -106,9 +106,9 @@ void presioneTeclaParaContinuar() {
 
 
 // Función recursiva (DFS) para encontrar un camino aleatorio garantizado
-int build_safe_path(int x, int y, int safe[N][N], int visited[N][N]) {
+int build_safe_path(int x, int y, int safe[LIM][LIM], int visited[LIM][LIM]) {
     // Verificar límites y si ya visitamos la celda
-    if (x < 0 || y < 0 || x >= N || y >= N || visited[x][y]) {
+    if (x < 0 || y < 0 || x >= LIM || y >= LIM || visited[x][y]) {
         return 0;
     }
 
@@ -116,7 +116,7 @@ int build_safe_path(int x, int y, int safe[N][N], int visited[N][N]) {
     safe[x][y] = 1; // Lo marcamos temporalmente como parte del camino
 
     // Condición de éxito: Llegamos a la meta
-    if (x == N - 1 && y == N - 1) {
+    if (x == LIM - 1 && y == LIM - 1) {
         return 1;
     }
 
@@ -149,16 +149,16 @@ int build_safe_path(int x, int y, int safe[N][N], int visited[N][N]) {
 }
 
 // Función principal para generar el laberinto
-void generate_maze(int maze[N][N], int difficulty) {
-    int safe[N][N] = {0};
-    int visited[N][N] = {0};
+void generate_maze(int maze[LIM][LIM], int difficulty) {
+    int safe[LIM][LIM] = {0};
+    int visited[LIM][LIM] = {0};
 
     // 1. Trazar el camino seguro desde el inicio (0,0) a la meta (N-1, N-1)
     build_safe_path(0, 0, safe, visited);
 
     // 2. Rellenar el resto de la matriz basándonos en la dificultad
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
+    for (int i = 0; i < LIM; i++) {
+        for (int j = 0; j < LIM; j++) {
             if (safe[i][j] == 1) {
                 // Si es parte del camino seguro, obligatoriamente es espacio libre
                 maze[i][j] = 0; 

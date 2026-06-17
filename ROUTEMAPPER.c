@@ -7,7 +7,6 @@
 #include "tdas/extra.h"
 #include <string.h>
 #include <time.h>
-
 #include "libSqlite3/sqlite3.h" //libreria para consultar info en data/chile/chile.gpkg
 
 #define MAX 256
@@ -25,7 +24,7 @@ typedef struct {
     int origen; //id donde comienza la ruta
     int destino; //id donde finaliza la ruta
 
-    float distancia_km;
+    float distanciaKm;
 
     float tiempoAuto;
     float tiempoBici;
@@ -37,7 +36,7 @@ typedef struct {
 typedef struct {
     Lugar lugar; //informacion con respecto al lugar
     List *conexiones; //lista de rutas con respecto al lugar
-} Vertice; //nodo del grafo
+} Vertice; //nodo del grafo o lugar del mapa
 
 typedef struct {
     List *vertices; //lista de todos los lugares
@@ -46,29 +45,24 @@ typedef struct {
     int cantidadAristas; //cantidad de rutas
 } Grafo;
 
-typedef struct {
-    Grafo *grafo;
+Grafo *generarGrafo() {
+    Grafo *grafo = malloc(sizeof(Grafo));
+    grafo->vertices = NULL;
+    grafo->cantidadVertices = 0;
+    grafo->cantidadAristas = 0;
 
-    char archivoLugares[MAX];
-    char archivoRutas[MAX];
-} State;
-
-/*
-typedef struct {
-    int origen;
-    int destino;
-
-    float distancia;
-
-    char calle[MAX];
-} accion;
- */
-
- /*
-int distancia_L1(State* state) {
-    return abs(state->x - (N-1)) + abs(state->y - (N-1));
+    return grafo;
 }
-*/
+
+void cargarDatosAlGrafo(Grafo *grafo) {
+    if (grafo -> vertices != NULL) {
+        printf("El grafo ya tiene datos cargados. No se pueden cargar nuevamente.\n");
+        return;
+    }
+
+    printf("Funcion cargarDatosAlGrafo() por implementar.\n");
+    
+}
 
 int pilaEstaVacia(Stack *pila){
     return stack_top(pila) == NULL;
@@ -80,14 +74,6 @@ int colaEstaVacia(Queue *cola){
 
 int heapEstaVacia(Heap *heap){
     return heap_top(heap) == NULL;
-}
-
-// Función para imprimir el estado actual
-void imprimirEstado(const State *estado) {
-    if (estado && estado->grafo)
-        printf("Grafo con %d vertices y %d aristas\n",
-               estado->grafo->cantidadVertices,
-               estado->grafo->cantidadAristas);
 }
 
 void imprimirCamino(List *camino){
@@ -119,9 +105,14 @@ void reportarAccidente(){
     printf("Funcion reportarAccidente() por implementar.\n");
 }
 
+/*
+flujo general del programa: cargar datos -> cargar grafo -> programar funciones -> probar funciones -> mostrar resultados
+antes de cerrar programa, liberar memoria y cerrar conexiones a la base de datos
+*/
+
 int main() {
 
-    // pedir al usuario que digite alguna opcion
+    Grafo *grafo = generarGrafo(); // se generavo inicializa el grafo
 
     char opcion;
     do {
@@ -143,7 +134,7 @@ int main() {
 
         switch (opcion) {
         case '1':
-            cargarDatos();
+            cargarDatosAlGrafo(grafo); // se lee la base de datos y se llena el grafo con los lugares y conexiones
             break;
         case '2':
             configuracionInicial();

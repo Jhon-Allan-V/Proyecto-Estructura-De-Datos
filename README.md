@@ -21,3 +21,5 @@ git push
 
 comando para compilar:
 gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+
+tdas a utilizar: grafo(principal), mapa(tabla hash, busqueda por id), lista, heap (algoritmo dijkstra)

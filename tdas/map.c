@@ -122,3 +122,16 @@ MapPair *map_first(Map *map) { return list_first(map->ls); }
 MapPair *map_next(Map *map) { return list_next(map->ls); }
 
 void map_clean(Map *map) { list_clean(map->ls); }
+
+void map_destroy(Map *map) {
+    if (map == NULL) return;
+    MapPair *pair = map_first(map);
+    while (pair != NULL) {
+        MapPair *next = map_next(map);
+        free(pair->key);
+        free(pair);
+        pair = next;
+    }
+    list_clean(map->ls);
+    free(map);
+}

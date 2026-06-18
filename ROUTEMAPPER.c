@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include "tdas/list.h"
 #include "tdas/stack.h"
 #include "tdas/queue.h"
 #include "tdas/heap.h"
 #include "tdas/extra.h"
-#include <string.h>
-#include <time.h>
 #include "libSqlite3/sqlite3.h" //libreria para consultar info en data/chile/chile.gpkg
 
 #define MAX 256
@@ -87,7 +87,9 @@ void cargarDatosAlGrafo(Grafo *grafo) {
         printf("El grafo ya tiene datos cargados. No se pueden cargar nuevamente.\n");
         return;
     }
-    sqlite3 *db; //se abre la base de datos
+
+    sqlite3 *db;
+
     int rc = sqlite3_open("data/chile-260615-free.gpkg/chile.gpkg", &db);
 
     if (rc != SQLITE_OK) { //si la base de datos no se puede abrir. el programa cierra
@@ -99,17 +101,45 @@ void cargarDatosAlGrafo(Grafo *grafo) {
         sqlite3_close(db);
         exit(EXIT_FAILURE);
     }
+    //consultarTablasDB(db); //mostrar las tablas de la base de datos para verificar lectura de este
 
-    consultarTablasDB(db); //mostrar las tablas de la base de datos para verificar lectura de este
+    sqlite3_stmt *stmt;
+    //cargar hasta 100 primeras filas de la tabla gis_osm_roads_free, que contiene las calles y caminos de chile
+    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free LIMIT 100;";
+    rc = sqlite3_prepare_v2(db, comando, -1, &stmt, NULL);
 
-    printf("\nFuncion cargarDatosAlGrafo() por implementar.\n");
-    /*
-    funciones por implementar (IDEAS):
-    cargarNodos();
-    cargarCalles();
-    cargarRutas();
-    */
+    if (rc != SQLITE_OK) {
+        printf("ERROR: %s\n", sqlite3_errmsg(db));
+
+        presioneTeclaParaContinuar();
+        limpiarPantalla();
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+
+    //se iteran las filas
+    while (sqlite3_step(stmt) == SQLITE_ROW){
+        //extraer datos
+        int fid = sqlite3_column_int(stmt, 0);
+        const unsigned char *geom = sqlite3_column_blob(stmt, 1); //dato binario
+        int geom_size = sqlite3_column_bytes(stmt, 1);
+        const char *nombre = sqlite3_column_text(stmt, 2);
+        const char *clase = sqlite3_column_text(stmt, 3);
+        const char *oneway = sqlite3_column_text(stmt, 4);
+
+        double lon1, lat1, lon2, lat2;
+        int resultadoParseo = parse_gpkg_linestring(geom, geom_size, &lon1, &lat1, &lon2, &lat2);
+        if (resultadoParseo != 1){
+            printf("Error al parsear la geometria: %s\n", geom);
+            continue; //se salta esta fila y se sigue con la siguiente
+        }
+    }
+
+    
     //una vez ya cargados los datos al grafo, se cierra la base da datos
+    sqlite3_finalize(stmt);
     sqlite3_close(db);
 }
 

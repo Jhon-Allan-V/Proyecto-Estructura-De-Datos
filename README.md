@@ -237,9 +237,7 @@ Compilar el proyecto con:
 
 
 ```bash
-
 gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
-
 
 ```
 

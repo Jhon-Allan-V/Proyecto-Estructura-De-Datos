@@ -144,7 +144,7 @@ La base de datos contiene múltiples tablas de interés para el proyecto.
 
 
 
-\### `gis\_osm\_roads\_free`
+\### `gis_osm_roads_free`
 
 
 
@@ -164,7 +164,7 @@ Campos relevantes:
 
 | `geom` | Geometría tipo LINESTRING |
 
-| `osm\_id` | Identificador original de OpenStreetMap |
+| `osm_id` | Identificador original de OpenStreetMap |
 
 | `fclass` | Tipo de vía (`primary`, `secondary`, `residential`, etc.) |
 
@@ -178,7 +178,7 @@ Campos relevantes:
 
 
 
-\### `gis\_osm\_places\_free`
+\### `gis_osm_places_free`
 
 
 
@@ -186,7 +186,7 @@ Contiene aproximadamente \*\*18.176 lugares y puntos geográficos\*\*.
 
 
 
-\### `gis\_osm\_pois\_free`
+\### `gis_osm_pois_free`
 
 
 

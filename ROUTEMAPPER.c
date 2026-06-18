@@ -54,14 +54,63 @@ Grafo *generarGrafo() {
     return grafo;
 }
 
+int callback(void *dato, int col, char **valores, char **nombres){
+    for (int i = 0; i < col; i++){
+        printf("%s\n", valores[i]);
+    }
+
+    return 0;
+}
+
+void consultarTablasDB(sqlite3 *db){
+    char *error = NULL;
+
+    const char *sql = "SELECT name FROM sqlite_master WHERE type='table';";
+
+    printf("\nTablas en la base de datos:\n");
+    int rc = sqlite3_exec(db, sql, callback, NULL, &error);
+
+    if (rc != SQLITE_OK){
+        printf("ERROR: %s\n", error);
+        sqlite3_free(error);
+    }
+
+    /*if (error != NULL){
+        printf("ERROR: %s\n", error);
+        sqlite3_free(error);
+    }*/
+}
+
+//primero se verifica si la base de datos puede ser abrida o leida por el programa
 void cargarDatosAlGrafo(Grafo *grafo) {
     if (grafo -> vertices != NULL) {
         printf("El grafo ya tiene datos cargados. No se pueden cargar nuevamente.\n");
         return;
     }
+    sqlite3 *db; //se abre la base de datos
+    int rc = sqlite3_open("data/chile-260615-free.gpkg/chile.gpkg", &db);
 
-    printf("Funcion cargarDatosAlGrafo() por implementar.\n");
-    
+    if (rc != SQLITE_OK) { //si la base de datos no se puede abrir. el programa cierra
+        printf("ERROR: %s\n", sqlite3_errmsg(db));
+
+        presioneTeclaParaContinuar();
+        limpiarPantalla();
+
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+
+    consultarTablasDB(db); //mostrar las tablas de la base de datos para verificar lectura de este
+
+    printf("\nFuncion cargarDatosAlGrafo() por implementar.\n");
+    /*
+    funciones por implementar (IDEAS):
+    cargarNodos();
+    cargarCalles();
+    cargarRutas();
+    */
+    //una vez ya cargados los datos al grafo, se cierra la base da datos
+    sqlite3_close(db);
 }
 
 int pilaEstaVacia(Stack *pila){
@@ -112,7 +161,7 @@ antes de cerrar programa, liberar memoria y cerrar conexiones a la base de datos
 
 int main() {
 
-    Grafo *grafo = generarGrafo(); // se generavo inicializa el grafo
+    Grafo *grafo = generarGrafo(); // se genera o inicializa el grafo
 
     char opcion;
     do {

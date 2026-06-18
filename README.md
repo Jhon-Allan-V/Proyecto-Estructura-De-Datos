@@ -1,63 +1,286 @@
-"ROUTEMAPPER utiliza una representación basada en datos reales obtenidos de OpenStreetMap para modelar la red vial de todo Chile, sobre la cual se ejecutan algoritmos de búsqueda y optimización de rutas."
-LINK: https://download.geofabrik.de/south-america/chile.html?utm\_source=chatgpt.com
-
-Se hara uso de SQLite3 para poder consultar la informacion que se encuentra en el directorio (data/). Para llevar esto a cabo, primero se debera de descargar la libreria (para Windows) en su pagina oficial:
-LINK SQLite3: https://sqlite.org/download.html (sqlite-amalgamation-3530200.zip(2.81 MiB)).
-(En este proyecto solamente se hara uso de sqlite3.c y sqlite3.h, los cuales se encuentran dentro del directorio (libSqlite3/))
+\# ROUTEMAPPER
 
 
 
-ARCHIVOS (data/) que el programa necesitara para procesar:
-chile-latest-free.gpkg      -> base de datos con respecto a la geografia de Chile
-limitesChile.txt            -> archivo txt el cual marca los limites de Chile
-
-El usuario tendra que descargar y agregar la base de datos manualmente en el directorio (data/chile-260615-free.gpkg/). Esto porque este archivo no se logro subir al github via comandos git debido que sobre pasaba el limite de peso.
+ROUTEMAPPER utiliza datos reales obtenidos desde OpenStreetMap para modelar la red vial de Chile, sobre la cual se ejecutan algoritmos de búsqueda y optimización de rutas.
 
 
 
-En la base de datos encontraremos tablas con datos de interés como por ejemplo:
+\## Fuente de datos
 
 
 
-\*gis\_osm\_roads\_free: (aprox: 1.001.470 segmentos de vía.)
-
-&#x09;fid: id interno
-
-&#x09;geom: geometría LINESTRING
-
-&#x09;osm\_id: id original OSM
-
-&#x09;fclass: tipo de vía (primary, secondary, residential, etc.)
-
-&#x09;name: nombre de calle
-
-&#x09;ref: referencia de carretera
-
-&#x09;oneway: si es de solo un sentido
-
-&#x09;maxspeed: velocidad máxima
+Los datos geográficos utilizados por el proyecto provienen de Geofabrik:
 
 
 
-\*gis\_osm\_places\_free (aprox: 18.176 puntos de interés / lugares)
-
-\*gis\_osm\_pois\_free (lugares que servirán cuando se desee buscar por origen o destino por nombre)
+🔗 https://download.geofabrik.de/south-america/chile.html
 
 
 
-Cabe aclarar que no es un mapa completo garantizado 
+\---
 
 
 
-(recordatorio)
-Tu flujo normal desde ahora será:
+\## Dependencias
+
+
+
+El proyecto utiliza \*\*SQLite3\*\* para consultar la información almacenada en la base de datos geográfica ubicada en el directorio `data/`.
+
+
+
+\### Descargar SQLite3
+
+
+
+Para Windows, descargar SQLite3 desde su página oficial:
+
+
+
+🔗 https://sqlite.org/download.html
+
+
+
+Versión utilizada:
+
+
+
+```
+
+sqlite-amalgamation-3530200.zip
+
+```
+
+
+
+Dentro del proyecto solo se utilizan los siguientes archivos:
+
+
+
+```
+
+libSqlite3/
+
+├── sqlite3.c
+
+└── sqlite3.h
+
+```
+
+
+
+\---
+
+
+
+\## Archivos requeridos
+
+
+
+El programa necesita los siguientes archivos dentro del directorio `data/`:
+
+
+
+```
+
+data/
+
+├── chile-latest-free.gpkg
+
+└── limitesChile.txt
+
+```
+
+
+
+\### Descripción
+
+
+
+| Archivo | Descripción |
+
+|----------|-------------|
+
+| `chile-latest-free.gpkg` | Base de datos geográfica de Chile obtenida desde OpenStreetMap. |
+
+| `limitesChile.txt` | Archivo de texto que contiene los límites geográficos de Chile. |
+
+
+
+\---
+
+
+
+\## Configuración inicial
+
+
+
+Debido al tamaño del archivo `.gpkg`, este no pudo ser incluido en el repositorio mediante GitHub.
+
+
+
+Por lo tanto, el usuario deberá descargarlo manualmente y copiarlo dentro del directorio:
+
+
+
+```text
+
+data/
+
+```
+
+
+
+\---
+
+
+
+\## Estructura de la base de datos
+
+
+
+La base de datos contiene múltiples tablas de interés para el proyecto.
+
+
+
+\### `gis\_osm\_roads\_free`
+
+
+
+Contiene aproximadamente \*\*1.001.470 segmentos de vía\*\*.
+
+
+
+Campos relevantes:
+
+
+
+| Campo | Descripción |
+
+|---------|-------------|
+
+| `fid` | Identificador interno |
+
+| `geom` | Geometría tipo LINESTRING |
+
+| `osm\_id` | Identificador original de OpenStreetMap |
+
+| `fclass` | Tipo de vía (`primary`, `secondary`, `residential`, etc.) |
+
+| `name` | Nombre de la calle |
+
+| `ref` | Referencia de carretera |
+
+| `oneway` | Indica si la vía es de sentido único |
+
+| `maxspeed` | Velocidad máxima permitida |
+
+
+
+\### `gis\_osm\_places\_free`
+
+
+
+Contiene aproximadamente \*\*18.176 lugares y puntos geográficos\*\*.
+
+
+
+\### `gis\_osm\_pois\_free`
+
+
+
+Contiene puntos de interés (POI) que pueden utilizarse para realizar búsquedas de origen y destino por nombre.
+
+
+
+> \*\*Nota:\*\* La información proviene de OpenStreetMap, por lo que no se garantiza una cobertura o precisión absoluta en todas las zonas del país.
+
+
+
+\---
+
+
+
+\## Estructuras de datos utilizadas
+
+
+
+Las principales estructuras de datos implementadas son:
+
+
+
+| TDA | Uso |
+
+|------|------|
+
+| Grafo | Representación principal de la red vial |
+
+| Mapa (Hash Table) | Búsqueda rápida de nodos por ID |
+
+| Lista | Almacenamiento dinámico de colecciones |
+
+| Heap | Implementación del algoritmo de Dijkstra |
+
+
+
+\---
+
+
+
+\## Compilación
+
+
+
+Compilar el proyecto con:
+
+
+
+```bash
+
+gcc ROUTEMAPPER.c \\
+
+&#x20;   tdas/extra.c \\
+
+&#x20;   tdas/heap.c \\
+
+&#x20;   tdas/list.c \\
+
+&#x20;   tdas/map.c \\
+
+&#x20;   libSqlite3/sqlite3.c \\
+
+&#x20;   -o ROUTEMAPPER \\
+
+&#x20;   -lm
+
+```
+
+
+
+\---
+
+
+
+\## Flujo de trabajo Git
+
+
+
+Comandos recomendados para guardar y subir cambios:
+
+
+
+```bash
 
 git add .
-git commit -m "Descripcion del cambio"
+
+git commit -m "Descripción del cambio"
+
 git push
 
-comando para compilar:
-gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+```
 
-tdas a utilizar: grafo(principal), mapa(tabla hash, busqueda por id), lista, heap (algoritmo dijkstra)
+
+
+
 

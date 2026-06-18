@@ -1,8 +1,8 @@
 #include "extra.h"
-
-
 #include <stdint.h>
 #include <string.h>
+
+
 
 static uint32_t read_u32(const unsigned char *p, int little) {
     if (little)
@@ -66,8 +66,8 @@ int parse_gpkg_linestring(const unsigned char *blob, int blob_size,
 }
 
 
-// Función para limpiar la pantalla
-void limpiarPantalla() { system("clear"); }
+// Función para limpiar la pantalla en Windows
+void limpiarPantalla() { system("cls"); }
 
 void presioneTeclaParaContinuar() {
   puts("Presione una tecla para continuar...");

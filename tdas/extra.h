@@ -8,13 +8,6 @@
 #include <stdint.h>
 
 
-
-static uint32_t read_u32(const unsigned char *p, int little);
-
-static double read_double(const unsigned char *p, int little);
-
-static int gpkg_envelope_size(int env_flag);
-
 int parse_gpkg_linestring(const unsigned char *blob, int blob_size,
                                  double *lon1, double *lat1,
                                  double *lon2, double *lat2);

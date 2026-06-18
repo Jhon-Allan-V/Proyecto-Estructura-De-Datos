@@ -119,7 +119,7 @@ void obtenerInformacionDB(Grafo *grafo){
 
     sqlite3_stmt *stmt;
     // leer todos los segmentos de la tabla gis_osm_roads_free, que contiene las calles y caminos de chile
-    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free LIMIT 100;";
+    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free LIMIT 50;";
     rc = sqlite3_prepare_v2(db, comando, -1, &stmt, NULL);
 
     if (rc != SQLITE_OK){

@@ -220,10 +220,10 @@ int main() {
         puts("========================================");
 
         puts("1) Cargar Datos");
-        puts("2) Configuracion Inicial");
-        puts("3) Calcular Ruta");
-        puts("4) Mostrar Ruta");
-        puts("5) Reportar Accidente");
+        puts("2) Configuracion Inicial"); //busqueda por nombre
+        puts("3) Calcular Ruta"); //busqueda por coordenadas
+        puts("4) Mostrar Ruta"); // busqueda por id
+        puts("5) Reportar Accidente"); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso
         puts("6) Salir");
 
         printf("Ingrese su opcion: ");

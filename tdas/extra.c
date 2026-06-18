@@ -1,97 +1,70 @@
 #include "extra.h"
 
 
-#define MAX_LINE_LENGTH 4096
-#define MAX_FIELDS      128
+#include <stdint.h>
+#include <string.h>
 
-char **leer_linea_csv(FILE *archivo, char separador) {
-    static char linea[MAX_LINE_LENGTH];
-    static char *campos[MAX_FIELDS];
-    int idx = 0;
-
-    if (fgets(linea, MAX_LINE_LENGTH, archivo) == NULL)
-        return NULL;  // fin de fichero
-
-    // quitar salto de línea
-    linea[strcspn(linea, "\r\n")] = '\0';
-
-    char *ptr = linea;
-    while (*ptr && idx < MAX_FIELDS - 1) {
-        char *start;
-
-        if (*ptr == '\"') {
-            // campo entrecomillado
-            ptr++;              // saltar la comilla inicial
-            start = ptr;
-
-            // compactar contenido: convertir "" → " y copiar el resto
-            char *dest = ptr;
-            while (*ptr) {
-                if (*ptr == '\"' && *(ptr + 1) == '\"') {
-                    *dest++ = '\"';  // una comilla literal
-                    ptr += 2;        // saltar ambas
-                }
-                else if (*ptr == '\"') {
-                    ptr++;           // fin del campo
-                    break;
-                }
-                else {
-                    *dest++ = *ptr++;
-                }
-            }
-            *dest = '\0';        // terminar cadena
-
-            // ahora ptr apunta justo después de la comilla de cierre
-            if (*ptr == separador) ptr++;
-        }
-        else {
-            // campo sin comillas
-            start = ptr;
-            while (*ptr && *ptr != separador)
-                ptr++;
-            if (*ptr == separador) {
-                *ptr = '\0';
-                ptr++;
-            }
-        }
-
-        campos[idx++] = start;
-    }
-
-    campos[idx] = NULL;
-    return campos;
+static uint32_t read_u32(const unsigned char *p, int little) {
+    if (little)
+        return (uint32_t)p[0] | ((uint32_t)p[1]<<8) | ((uint32_t)p[2]<<16) | ((uint32_t)p[3]<<24);
+    return ((uint32_t)p[0]<<24) | ((uint32_t)p[1]<<16) | ((uint32_t)p[2]<<8) | (uint32_t)p[3];
 }
 
-
-List *split_string(const char *str, const char *delim) {
-  List *result = list_create();
-  char *token = strtok((char *)str, delim);
-
-  while (token != NULL) {
-    // Eliminar espacios en blanco al inicio del token
-    while (*token == ' ') {
-      token++;
+static double read_double(const unsigned char *p, int little) {
+    uint64_t v;
+    if (little) {
+        v = (uint64_t)p[0] | ((uint64_t)p[1]<<8) | ((uint64_t)p[2]<<16) | ((uint64_t)p[3]<<24)
+          | ((uint64_t)p[4]<<32) | ((uint64_t)p[5]<<40) | ((uint64_t)p[6]<<48) | ((uint64_t)p[7]<<56);
+    } else {
+        v = ((uint64_t)p[0]<<56) | ((uint64_t)p[1]<<48) | ((uint64_t)p[2]<<40) | ((uint64_t)p[3]<<32)
+          | ((uint64_t)p[4]<<24) | ((uint64_t)p[5]<<16) | ((uint64_t)p[6]<<8) | (uint64_t)p[7];
     }
-
-    // Eliminar espacios en blanco al final del token
-    char *end = token + strlen(token) - 1;
-    while (*end == ' ' && end > token) {
-      *end = '\0';
-      end--;
-    }
-
-    // Copiar el token en un nuevo string
-    char *new_token = strdup(token);
-
-    // Agregar el nuevo string a la lista
-    list_pushBack(result, new_token);
-
-    // Obtener el siguiente token
-    token = strtok(NULL, delim);
-  }
-
-  return result;
+    double d;
+    memcpy(&d, &v, sizeof(d));
+    return d;
 }
+
+static int gpkg_envelope_size(int env_flag) {
+    switch (env_flag) {
+        case 0: return 0;
+        case 1: return 32;
+        case 2: return 48;
+        case 3: return 48;
+        case 4: return 64;
+        default: return 0;
+    }
+}
+
+int parse_gpkg_linestring(const unsigned char *blob, int blob_size,
+                                 double *lon1, double *lat1,
+                                 double *lon2, double *lat2)
+{
+    if (blob_size < 40 || blob[0] != 'G' || blob[1] != 'P') return 0;
+
+    int flags = blob[3];
+    int env_flag = (flags >> 1) & 0x07;
+    int env_size = gpkg_envelope_size(env_flag);
+    int header_size = 8 + env_size;
+    if (blob_size < header_size + 9) return 0;
+
+    const unsigned char *wkb = blob + header_size;
+    int wkb_little = wkb[0] == 1;
+    uint32_t geom_type = read_u32(wkb + 1, wkb_little);
+    if (geom_type != 2) return 0; // LINESTRING
+
+    uint32_t num_points = read_u32(wkb + 5, wkb_little);
+    if (num_points < 2) return 0;
+
+    const unsigned char *p0 = wkb + 9;
+    const unsigned char *pN = wkb + 9 + (num_points - 1) * 16;
+
+    *lon1 = read_double(p0, wkb_little);
+    *lat1 = read_double(p0 + 8, wkb_little);
+    *lon2 = read_double(pN, wkb_little);
+    *lat2 = read_double(pN + 8, wkb_little);
+    return 1;
+}
+
 
 // Función para limpiar la pantalla
 void limpiarPantalla() { system("clear"); }
@@ -102,77 +75,4 @@ void presioneTeclaParaContinuar() {
   getchar(); // Espera a que el usuario presione una tecla
 }
 
-
-
-
-// Función recursiva (DFS) para encontrar un camino aleatorio garantizado
-int build_safe_path(int x, int y, int safe[LIM][LIM], int visited[LIM][LIM]) {
-    // Verificar límites y si ya visitamos la celda
-    if (x < 0 || y < 0 || x >= LIM || y >= LIM || visited[x][y]) {
-        return 0;
-    }
-
-    visited[x][y] = 1;
-    safe[x][y] = 1; // Lo marcamos temporalmente como parte del camino
-
-    // Condición de éxito: Llegamos a la meta
-    if (x == LIM - 1 && y == LIM - 1) {
-        return 1;
-    }
-
-    // Direcciones: Derecha, Abajo, Izquierda, Arriba
-    int dirs[4][2] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
-
-    // Mezclar las direcciones aleatoriamente para que el camino no sea predecible
-    for (int i = 0; i < 4; i++) {
-        int r = rand() % 4;
-        int tempX = dirs[i][0];
-        int tempY = dirs[i][1];
-        dirs[i][0] = dirs[r][0];
-        dirs[i][1] = dirs[r][1];
-        dirs[r][0] = tempX;
-        dirs[r][1] = tempY;
-    }
-
-    // Explorar los vecinos en el orden aleatorio
-    for (int i = 0; i < 4; i++) {
-        int nx = x + dirs[i][0];
-        int ny = y + dirs[i][1];
-        if (build_safe_path(nx, ny, safe, visited)) {
-            return 1; // Si este camino llega a la meta, detenemos la búsqueda
-        }
-    }
-
-    // Backtracking: Si llegamos a un callejón sin salida, desmarcamos el camino
-    safe[x][y] = 0;
-    return 0;
-}
-
-// Función principal para generar el laberinto
-void generate_maze(int maze[LIM][LIM], int difficulty) {
-    int safe[LIM][LIM] = {0};
-    int visited[LIM][LIM] = {0};
-
-    // 1. Trazar el camino seguro desde el inicio (0,0) a la meta (N-1, N-1)
-    build_safe_path(0, 0, safe, visited);
-
-    // 2. Rellenar el resto de la matriz basándonos en la dificultad
-    for (int i = 0; i < LIM; i++) {
-        for (int j = 0; j < LIM; j++) {
-            if (safe[i][j] == 1) {
-                // Si es parte del camino seguro, obligatoriamente es espacio libre
-                maze[i][j] = 0; 
-            } else {
-                // Si no es el camino seguro, tiramos un dado de 0 a 99
-                // 'difficulty' actúa como el porcentaje de aparición de obstáculos
-                int r = rand() % 100;
-                if (r < difficulty) {
-                    maze[i][j] = 1; // Pared / Obstáculo
-                } else {
-                    maze[i][j] = 0; // Espacio libre
-                }
-            }
-        }
-    }
-}
 

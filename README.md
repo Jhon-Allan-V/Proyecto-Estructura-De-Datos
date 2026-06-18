@@ -238,21 +238,8 @@ Compilar el proyecto con:
 
 ```bash
 
-gcc ROUTEMAPPER.c \\
+gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
 
-&#x20;   tdas/extra.c \\
-
-&#x20;   tdas/heap.c \\
-
-&#x20;   tdas/list.c \\
-
-&#x20;   tdas/map.c \\
-
-&#x20;   libSqlite3/sqlite3.c \\
-
-&#x20;   -o ROUTEMAPPER \\
-
-&#x20;   -lm
 
 ```
 

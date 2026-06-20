@@ -4,12 +4,15 @@
 #include <time.h>
 #include <math.h>
 #include "tdas/list.h"
+#include "tdas/hashmap.h"
 #include "tdas/map.h"
 #include "tdas/stack.h"
 #include "tdas/queue.h"
 #include "tdas/heap.h"
 #include "tdas/extra.h"
 #include "libSqlite3/sqlite3.h" //libreria para consultar info en data/chile/chile.gpkg
+#define PI 3.14159265358979323846
+
 
 #define MAX 256
 
@@ -47,6 +50,7 @@ typedef struct {
 
 typedef struct {
     List *vertices; //lista de todos los lugares
+    HashMap *indiceCoordenadas; // Para guardar sin repeticion
 
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
@@ -55,7 +59,10 @@ typedef struct {
 Grafo *generarGrafo(){
     Grafo *grafo = malloc(sizeof(Grafo));
     if (!grafo) return NULL;
+    
     grafo -> vertices = list_create();
+    grafo -> indiceCoordenadas = hashmap_create(2000003);
+    
     grafo -> cantidadVertices = 0;
     grafo -> cantidadAristas = 0;
 
@@ -181,6 +188,123 @@ void imprimirCamino(List *camino){
         v = list_next(camino);
     }
 }
+
+/*
+
+Crear una key unida unica por cord.
+
+Para que en el hashmap compruebe si ese punto existe
+dentro del mapa.
+
+Ejemplo :
+lon = -71.612345
+lat = -33.056765
+
+la key sera ("-71.612345, -33.056765")
+
+*/
+
+char *UnionCoordenada(double lon, double lat)
+{
+    char limite[100];
+    sprintf(limite, "%.6lf,%.6lf", lon, lat);
+
+    char *key = malloc(strlen(limite) + 1);
+    strcpy(key, limite);
+
+    return key;
+}
+
+/* 
+Convertir los grados a radianes 
+
+las coordenadas vienen en grados, pero nuestras funciones matematicas
+para calcular distancia trabajan con sin(), cos() trabajan con radianes
+
+*/
+
+double grados_Radianes(double grados)
+{
+    return grados * PI / 180.0;
+}
+
+/* Calcula la distancia entre 2 coordenadas 
+
+Usamos la formula de Haversine 
+Esta formuala le otorga un peso a la arista del grafo 
+
+*/
+
+double calcularDistancia(double lat1, double lon1, double lat2, double lon2)
+{
+    double R = 6371; // Radio aprox de la tierra en kilometros.
+
+    double dlat = grados_Radianes(lat2 - lat1); // Cambio de latitud
+    double dlon = grados_Radianes(lon2 - lon1); // Cambio de longitud
+
+
+    // Se pasan las latitudes originales a radianes 
+    lat1 = grados_Radianes(lat1); 
+    lat2 = grados_Radianes(lat2); 
+
+    // Formula de Haversine
+
+    double H = sin(dlat / 2) * sin(dlat / 2) + cos(lat1) * cos(lat2) * sin(dlon / 2) * sin(dlon / 2);
+
+    double C = 2 * atan2((sqrt(H)), sqrt(1 - H)); // Angulo central entre dos puntos
+
+    return R * C; // obtenemos la diferencia en kilometros
+
+}
+
+/*
+
+Buscar un vertice por la coordenada si este ya existe retorna el vertice existente
+pero en caso contrario crea un nuevo vertice y lo guarda en la lista de vertices del grafo
+y lo guarda en el registro de HashMap
+
+*/
+
+Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *nombre)
+{
+    char *key = UnionCoordenada(lon, lat);
+
+    Vertice *existente = hashmap_search(grafo->indiceCoordenadas, key);
+
+    if(existente != NULL)
+    {
+        free(key);
+        return NULL;
+    }
+
+    Vertice *nuevo = malloc(sizeof(Vertice));
+    if(nuevo == NULL)
+    {
+        free(key);
+        return NULL;
+    }
+
+    nuevo->lugar.id = grafo->cantidadVertices;
+
+    strncpy(nuevo->lugar.nombre, nombre ? nombre : "Sin nombre", MAX); // Copia nombre de la calle dentro del vertice si no existe queda sin nombre
+    nuevo->lugar.nombre[MAX - 1] = "\0"; // Asegura que el string termine bien a pesar de superar el limite
+
+    nuevo->lugar.latitud = lat;
+    nuevo->lugar.longitud = lon; 
+
+    nuevo->conexiones = list_create();
+
+    list_pushBack(grafo->vertices, nuevo);
+    hashmap_insert(grafo->indiceCoordenadas, key, nuevo);
+
+    grafo->cantidadVertices ++; 
+
+    return nuevo;
+}
+
+
+
+
 
 void cargarDatos(){
     printf("Funcion cargarDatos() por implementar.\n");

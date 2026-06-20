@@ -1,1 +1,9 @@
 data/*.gpkg
+
+.vscode/
+DatosDeCalleCvs/
+
+*.csv
+*.gpkg
+
+ROUTEMAPPER.exe

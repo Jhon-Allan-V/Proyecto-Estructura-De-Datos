@@ -237,33 +237,16 @@ Compilar el proyecto con:
 
 
 ```bash
-gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+NUEVO : gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+
+
+ANTIGUO : gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
 
 ```
 
 
 
 \---
-
-
-
-\## Flujo de trabajo Git
-
-
-
-Comandos recomendados para guardar y subir cambios:
-
-
-
-```bash
-
-git add .
-
-git commit -m "Descripción del cambio"
-
-git push
-
-```
 
 
 

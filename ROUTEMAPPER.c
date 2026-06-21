@@ -3,24 +3,32 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+
 #include "tdas/list.h"
 #include "tdas/hashmap.h"
-#include "tdas/map.h"
+//#include "tdas/map.h"
 #include "tdas/stack.h"
 #include "tdas/queue.h"
 #include "tdas/heap.h"
 #include "tdas/extra.h"
 #include "libSqlite3/sqlite3.h" //libreria para consultar info en data/chile/chile.gpkg
+
 #define PI 3.14159265358979323846
-
-
 #define MAX 256
+
+// colores para la interfaz o menu
+#define ROJO    "\033[31m"
+#define VERDE   "\033[32m"
+#define AZUL    "\033[34m"
+#define MORADO "\033[35m"
+#define AMARILLO "\033[33m"
+#define RESET   "\033[0m"
 
 //se usara para almaxenar una key temporal, para validar que no se repitan calles en el grafo
 typedef struct{
     double keyLongitud;
     double keyLattitud;
-}keyParaMapaTemporal;
+}keyCordenadas;
 
 typedef struct {
     int id;
@@ -67,105 +75,6 @@ Grafo *generarGrafo(){
     grafo -> cantidadAristas = 0;
 
     return grafo;
-}
-
-int callback(void *dato, int col, char **valores, char **nombres){
-    for (int i = 0; i < col; i++){
-        printf("%s\n", valores[i]);
-    }
-
-    return 0;
-}
-
-void consultarTablasDB(sqlite3 *db){
-    char *error = NULL;
-
-    const char *sql = "SELECT name FROM sqlite_master WHERE type='table';";
-
-    printf("\nTablas en la base de datos:\n");
-    int rc = sqlite3_exec(db, sql, callback, NULL, &error);
-
-    if (rc != SQLITE_OK){
-        printf("ERROR: %s\n", error);
-        sqlite3_free(error);
-    }
-}
-
-void cargarDatosAlGrafo(Grafo *grafo, const char *nombre,
-                               const char *clase, const char *oneway,
-                               double lon1, double lat1, double lon2, double lat2) {
-
-}
-
-//primero se verifica si la base de datos puede ser abrida o leida por el programa
-void obtenerInformacionDB(Grafo *grafo){
-    if (grafo == NULL) {
-        printf("Error: grafo no inicializado.\n");
-        return;
-    }
-
-    if (grafo->vertices != NULL && list_size(grafo->vertices) > 0) {
-        printf("El grafo ya tiene datos cargados. No se pueden cargar nuevamente.\n");
-        return;
-    }
-
-    sqlite3 *db;
-
-    int rc = sqlite3_open("data/chile-260615-free.gpkg/chile.gpkg", &db);
-
-    if (rc != SQLITE_OK) { //si la base de datos no se puede abrir. el programa cierra
-        printf("ERROR: %s\n", sqlite3_errmsg(db));
-
-        presioneTeclaParaContinuar();
-        limpiarPantalla();
-
-        sqlite3_close(db);
-        exit(EXIT_FAILURE);
-    }
-    //consultarTablasDB(db); //mostrar las tablas de la base de datos para verificar lectura de este
-
-    sqlite3_stmt *stmt;
-    // leer todos los segmentos de la tabla gis_osm_roads_free, que contiene las calles y caminos de chile
-    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free LIMIT 50;";
-    rc = sqlite3_prepare_v2(db, comando, -1, &stmt, NULL);
-
-    if (rc != SQLITE_OK){
-        printf("ERROR: %s\n", sqlite3_errmsg(db));
-
-        presioneTeclaParaContinuar();
-        limpiarPantalla();
-
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        exit(EXIT_FAILURE);
-    }
-
-    //se iteran las filas
-    while (sqlite3_step(stmt) == SQLITE_ROW){
-        int fid = sqlite3_column_int(stmt, 0);
-        const unsigned char *geom = sqlite3_column_blob(stmt, 1); //dato binario
-        int geom_size = sqlite3_column_bytes(stmt, 1);
-        const char *nombre = (const char *)sqlite3_column_text(stmt, 2); //nombre de la calle
-        const char *clase = (const char *)sqlite3_column_text(stmt, 3); //tipo de calle (residential, primary, secondary, etc)
-        const char *oneway = (const char *)sqlite3_column_text(stmt, 4); //si es un solo sentido o no
-
-        double lon1, lat1, lon2, lat2;
-        int resultadoParseo = parse_gpkg_linestring(geom, geom_size, &lon1, &lat1, &lon2, &lat2);
-
-        if (resultadoParseo != 1){
-            printf("Error al parsear la geometria en fila %d.\n", fid);
-            continue; //se salta esta fila y se sigue con la siguiente
-        }
-
-        printf("\nFila %d: %s, %s, %s, (%lf, %lf) -> (%lf, %lf)\n", fid, nombre, clase, oneway, lon1, lat1, lon2, lat2);
-
-        //crear mapa temporal (tabla hash) para verificar que no se repitan calles, la key seria : (lon, lat)
-        //Map *mapaTemporal = sorted_map_create(compararKeysMapaTemporal););
-        //cargarDatosAlGrafo(grafo, nombre, clase, oneway, lon1, lat1, lon2, lat2);
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
 }
 
 int pilaEstaVacia(Stack *pila){
@@ -274,7 +183,8 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
     if(existente != NULL)
     {
         free(key);
-        return NULL;
+        //return NULL;
+        return existente;
     }
 
     Vertice *nuevo = malloc(sizeof(Vertice));
@@ -287,7 +197,7 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
     nuevo->lugar.id = grafo->cantidadVertices;
 
     strncpy(nuevo->lugar.nombre, nombre ? nombre : "Sin nombre", MAX); // Copia nombre de la calle dentro del vertice si no existe queda sin nombre
-    nuevo->lugar.nombre[MAX - 1] = "\0"; // Asegura que el string termine bien a pesar de superar el limite
+    nuevo->lugar.nombre[MAX - 1] = '\0'; // Asegura que el string termine bien a pesar de superar el limite
 
     nuevo->lugar.latitud = lat;
     nuevo->lugar.longitud = lon; 
@@ -302,27 +212,163 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
     return nuevo;
 }
 
+Conexion *crearConexion(int idOrigen, int idDestino, double distancia, const char *clase, const char *oneway){
+    Conexion *conexion = malloc(sizeof(Conexion));
+    if (conexion == NULL){
+        puts("Error al crear conexion.");
+        presioneTeclaParaContinuar();
+        limpiarPantalla();
+        exit(EXIT_FAILURE);
+    }
 
+    conexion -> origen = idOrigen;
+    conexion -> destino = idDestino;
+    conexion -> distanciaKm = distancia;
 
+    // Asignar tiempos y combustible según la clase de calle
+    if (strcmp(clase, "residential") == 0) {
+        // velocidad = distancia / tiempo -> tiempo = distancia / velocidad MAX de la calle
 
+        conexion -> tiempoAuto = distancia / 30.0; // 30 km/h
+        conexion -> tiempoBici = distancia / 15.0; // 15 km/h
+        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
+        conexion -> combustibleAuto = distancia * 0.08; // 0.08 litros/km
+    } else if (strcmp(clase, "primary") == 0) {
+        conexion -> tiempoAuto = distancia / 60.0; // 60 km/h
+        conexion -> tiempoBici = distancia / 20.0; // 20 km/h
+        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
+        conexion -> combustibleAuto = distancia * 0.1; // 0.1 litros/km
+    } else if (strcmp(clase, "secondary") == 0) {
+        conexion -> tiempoAuto = distancia / 50.0; // 50 km/h
+        conexion -> tiempoBici = distancia / 18.0; // 18 km/h
+        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
+        conexion -> combustibleAuto = distancia * 0.09; // 0.09 litros/km
+    } else {
+        // Valores por defecto para otras clases de calles
+        conexion -> tiempoAuto = distancia / 40.0; // 40 km/h
+        conexion -> tiempoBici = distancia / 12.0; // 12 km/h
+        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
+        conexion -> combustibleAuto = distancia * 0.07; // 0.07 litros/km
+    }
 
-void cargarDatos(){
-    printf("Funcion cargarDatos() por implementar.\n");
+    return conexion;
 }
 
-void configuracionInicial(){
-    printf("Funcion configuracionInicial() por implementar.\n");
+void cargarDatosAlGrafo(Grafo *grafo, const char *nombre, const char *clase, const char *oneway, keyCordenadas keyCor1, keyCordenadas keyCor2){
+    //filtrar datos repetidos a traves de el hashmap del grafo, mediante las coordenadas
+    Vertice *verticeOrigen = Obtener_CrearVertice(grafo, keyCor1.keyLongitud, keyCor1.keyLattitud, nombre);
+    Vertice *verticeDestino = Obtener_CrearVertice(grafo, keyCor2.keyLongitud, keyCor2.keyLattitud, nombre);
+    
+    double distanciaPuntos = calcularDistancia(verticeOrigen -> lugar.latitud, verticeOrigen -> lugar.longitud, verticeDestino -> lugar.latitud, verticeDestino -> lugar.longitud);
+
+    int esSoloIda = oneway && strcmp(oneway, "yes") == 0;
+    
+    if (esSoloIda){ //solo ida
+        Conexion *conexionIda = crearConexion(verticeOrigen -> lugar.id, verticeDestino -> lugar.id, distanciaPuntos, clase, oneway);
+        list_pushBack(verticeOrigen -> conexiones, conexionIda);
+        grafo -> cantidadAristas++;
+    }
+
+    else //ida y vuelta
+    {
+        Conexion *conexionIda = crearConexion(verticeOrigen -> lugar.id, verticeDestino -> lugar.id, distanciaPuntos, clase, oneway);
+        list_pushBack(verticeOrigen -> conexiones, conexionIda);
+
+        Conexion *conexionVuelta = crearConexion(verticeDestino -> lugar.id, verticeOrigen -> lugar.id, distanciaPuntos, clase, oneway);
+        list_pushBack(verticeDestino -> conexiones, conexionVuelta);
+
+        grafo -> cantidadAristas += 2;
+    }
 }
 
-void calcularRuta(){
-    printf("Funcion calcularRuta() por implementar.\n");
+//primero se verifica si la base de datos puede ser abrida o leida por el programa
+void obtenerInformacionDB(Grafo *grafo){
+    if (grafo == NULL){
+        printf("Error: grafo no inicializado.\n");
+        return;
+    }
+
+    if (grafo->vertices != NULL && list_size(grafo->vertices) > 0) {
+        printf(ROJO"El grafo ya tiene datos cargados. No se pueden cargar nuevamente.\n"RESET);
+        return;
+    }
+
+    sqlite3 *db;
+
+    int rc = sqlite3_open("data/chile-260615-free.gpkg/chile.gpkg", &db);
+
+    if (rc != SQLITE_OK) { //si la base de datos no se puede abrir. el programa cierra
+        printf("ERROR: %s\n", sqlite3_errmsg(db));
+
+        presioneTeclaParaContinuar();
+        limpiarPantalla();
+
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+    //consultarTablasDB(db); //mostrar las tablas de la base de datos para verificar lectura de este
+
+    sqlite3_stmt *stmt;
+    // leer todos los segmentos de la tabla gis_osm_roads_free, que contiene las calles y caminos de chile
+    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free;"; //LIMIT 50;
+    rc = sqlite3_prepare_v2(db, comando, -1, &stmt, NULL);
+
+    if (rc != SQLITE_OK){
+        printf("ERROR: %s\n", sqlite3_errmsg(db));
+
+        presioneTeclaParaContinuar();
+        limpiarPantalla();
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+
+    //se iteran las filas
+    while (sqlite3_step(stmt) == SQLITE_ROW){
+        int fid = sqlite3_column_int(stmt, 0);
+        const unsigned char *geom = sqlite3_column_blob(stmt, 1); //dato binario
+        int geom_size = sqlite3_column_bytes(stmt, 1);
+        const char *nombre = (const char *)sqlite3_column_text(stmt, 2); //nombre de la calle
+        const char *clase = (const char *)sqlite3_column_text(stmt, 3); //tipo de calle (residential, primary, secondary, etc)
+        const char *oneway = (const char *)sqlite3_column_text(stmt, 4); //si es un solo sentido o no
+
+        double lon1, lat1, lon2, lat2;
+        int resultadoParseo = parse_gpkg_linestring(geom, geom_size, &lon1, &lat1, &lon2, &lat2);
+
+        if (resultadoParseo != 1){
+            printf("Error al parsear la geometria en fila %d.\n", fid);
+            continue; //se salta esta fila y se sigue con la siguiente
+        }
+
+        //MUESTRA LA INFO DE LAS CALLES: printf("\nFila %d: %s, %s, %s, (%lf, %lf) -> (%lf, %lf)\n", fid, nombre, clase, oneway, lon1, lat1, lon2, lat2);
+        keyCordenadas keyCor1 = {lon1, lat1};
+        keyCordenadas keyCor2 = {lon2, lat2};
+        cargarDatosAlGrafo(grafo, nombre, clase, oneway, keyCor1, keyCor2);
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    puts(VERDE"\nDatos cargados exitosamente al grafo.");
+    printf("* Numero de vertices cargados" AZUL"(lugares): " AMARILLO"%d\n"RESET, grafo -> cantidadVertices);
+    printf(VERDE"* Numero de aristas cargados" AZUL"(conexiones entre lugares): " AMARILLO"%d\n"RESET, grafo -> cantidadAristas);
 }
 
-void mostrarRuta(){
-    printf("Funcion mostrarRuta() por implementar.\n");
+void busquedaPorId(Grafo *grafo){
+    printf("Funcion busquedaPorId() por implementar.\n");
 }
 
-void reportarAccidente(){
+void busquedaPorNombre(Grafo *grafo){
+    printf("Funcion busquedaPorNombre() por implementar.\n");
+}
+
+void busquedaPorCoordenadas(Grafo *grafo){
+    printf("Funcion busquedaPorCoordenadas() por implementar.\n");
+}
+
+
+void reportarAccidente(Grafo *grafo){
     printf("Funcion reportarAccidente() por implementar.\n");
 }
 
@@ -332,48 +378,71 @@ antes de cerrar programa, liberar memoria y cerrar conexiones a la base de datos
 */
 
 int main() {
+    limpiarPantalla();
 
     Grafo *grafo = generarGrafo(); // se genera o inicializa el grafo
 
     char opcion;
     do {
 
-        printf("\n\n***** ROUTERMAPPER ******\n");
-        puts("========================================");
-        puts("        Escoge alguna opcion            ");
-        puts("========================================");
+        printf(MORADO
+        "\n\n"
+        "  ____             _       __  __                              \n"
+        " |  _ \\ ___  _   _| |_ ___|  \\/  | __ _ _ __  _ __   ___ _ __ \n"
+        " | |_) / _ \\| | | | __/ _ \\ |\\/| |/ _` | '_ \\| '_ \\ / _ \\ '__|\n"
+        " |  _ < (_) | |_| | ||  __/ |  | | (_| | |_) | |_) |  __/ |   \n"
+        " |_| \\_\\___/ \\__,_|\\__\\___|_|  |_|\\__,_| .__/| .__/ \\___|_|   \n"
+        "                                       |_|   |_|              \n"
+        RESET);
 
-        puts("1) Cargar Datos");
-        puts("2) Configuracion Inicial"); //busqueda por nombre
-        puts("3) Calcular Ruta"); //busqueda por coordenadas
-        puts("4) Mostrar Ruta"); // busqueda por id
-        puts("5) Reportar Accidente"); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso
-        puts("6) Salir");
+        printf(ROJO"\n========================================\n"RESET);
+        printf(AZUL"        Escoge alguna opcion            \n"RESET);
+        printf(ROJO"========================================\n"RESET);
 
-        printf("Ingrese su opcion: ");
-        scanf(" %c", &opcion);
+        /*
+        - menu con opciones: - // este deberia ser el resultado final del menu 
+
+        cargar datos (desde la base de datos, se llena el grafo con los lugares y conexiones)
+        busqueda por coordenadas
+        busqueda por nombre de calle
+        busqueda por id de lugar
+        mostrar informacion de calles
+        reportar accidente en calle (para que al momento de busqueda se tenga en cuenta eso)
+        exit
+        */
+
+        puts(AZUL"1) Cargar Datos");
+        puts("  2) Busqueda por id"); //busqueda por id de lugar
+        puts("    3) Busqueda por nombre"); //busqueda por nombre de calle
+        puts("      4) Busqueda por coordenadas"); // busqueda por coordenadas
+        puts("        5) Reportar Accidente"RESET); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso
+        puts(ROJO"                                6) Salir"RESET);
+        
+        printf(ROJO"========================================\n"RESET);
+        printf(AMARILLO"Ingrese su opcion -> "VERDE);
+        scanf(" %c"RESET, &opcion);
 
         switch (opcion) {
         case '1':
             obtenerInformacionDB(grafo); // se lee la base de datos y se llena el grafo con los lugares y conexiones
             break;
         case '2':
-            configuracionInicial();
+            busquedaPorId(grafo); //busqueda por id de lugar
             break;
         case '3':
-            calcularRuta();
+            busquedaPorNombre(grafo); //busqueda por nombre de calle
             break;
         case '4':
-            mostrarRuta();
+            busquedaPorCoordenadas(grafo); //busqueda por coordenadas
             break;
         case '5':
-            reportarAccidente();
+            reportarAccidente(grafo); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso    
             break;
         case '6':
-            printf("\nHasta luego!\n");
+            printf(AZUL"\nHasta luego!\n"RESET);
             break;
         default:
-            printf("\nOpcion No Valida.\n");
+            printf(ROJO"\nOpcion No Valida.\n"RESET);
             break;
         }
 
@@ -383,7 +452,6 @@ int main() {
             limpiarPantalla();
         }
 
-  } while (opcion != '6');
-
-  return 0;
+    } while (opcion != '6');
+    return 0;
 }

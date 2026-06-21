@@ -99,7 +99,6 @@ void imprimirCamino(List *camino){
 }
 
 /*
-
 Crear una key unida unica por cord.
 
 Para que en el hashmap compruebe si ese punto existe
@@ -110,7 +109,6 @@ lon = -71.612345
 lat = -33.056765
 
 la key sera ("-71.612345, -33.056765")
-
 */
 
 char *UnionCoordenada(double lon, double lat)

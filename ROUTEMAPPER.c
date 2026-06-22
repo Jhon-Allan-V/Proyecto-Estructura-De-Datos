@@ -353,18 +353,13 @@ void obtenerInformacionDB(Grafo *grafo){
     printf(VERDE"* Numero de aristas cargados" AZUL"(conexiones entre lugares): " AMARILLO"%d\n"RESET, grafo -> cantidadAristas);
 }
 
-void busquedaPorId(Grafo *grafo){
-    printf("Funcion busquedaPorId() por implementar.\n");
+void CalcularRuta(Grafo *grafo){
+    printf("Funcion CalcularRuta() por implementar.\n");
 }
 
-void busquedaPorNombre(Grafo *grafo){
-    printf("Funcion busquedaPorNombre() por implementar.\n");
+void mostrarInformacion(Grafo *grafo){
+    printf("Funcion mostrarInformacion() por implementar.\n");
 }
-
-void busquedaPorCoordenadas(Grafo *grafo){
-    printf("Funcion busquedaPorCoordenadas() por implementar.\n");
-}
-
 
 void reportarAccidente(Grafo *grafo){
     printf("Funcion reportarAccidente() por implementar.\n");
@@ -396,26 +391,11 @@ int main() {
         printf(ROJO"\n========================================\n"RESET);
         printf(AZUL"        Escoge alguna opcion            \n"RESET);
         printf(ROJO"========================================\n"RESET);
-
-        /*
-        - menu con opciones: - // este deberia ser el resultado final del menu 
-
-        cargar datos (desde la base de datos, se llena el grafo con los lugares y conexiones)
-        busqueda por coordenadas
-        busqueda por nombre de calle
-        busqueda por id de lugar
-        mostrar informacion de calles
-        reportar accidente en calle (para que al momento de busqueda se tenga en cuenta eso)
-        exit
-        */
-
         puts(AZUL"1) Cargar Datos");
-        puts("  2) Busqueda por id"); //busqueda por id de lugar
-        puts("    3) Busqueda por nombre"); //busqueda por nombre de calle
-        puts("      4) Busqueda por coordenadas"); // busqueda por coordenadas
-        puts("        5) Reportar Accidente"RESET); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso
-        puts(ROJO"                                6) Salir"RESET);
-        
+        puts("  2) Calcular ruta"); //busqueda por id de lugar
+        puts("    3) Mostrar informacion"); //busqueda por nombre de calle
+        puts("      4) Reportar accidente"); // busqueda por coordenadas
+        puts(ROJO"                                5) Salir"RESET);
         printf(ROJO"========================================\n"RESET);
         printf(AMARILLO"Ingrese su opcion -> "VERDE);
         scanf(" %c"RESET, &opcion);
@@ -425,18 +405,15 @@ int main() {
             obtenerInformacionDB(grafo); // se lee la base de datos y se llena el grafo con los lugares y conexiones
             break;
         case '2':
-            busquedaPorId(grafo); //busqueda por id de lugar
+            CalcularRuta(grafo); //busqueda por id de lugar
             break;
         case '3':
-            busquedaPorNombre(grafo); //busqueda por nombre de calle
+            mostrarInformacion(grafo); //busqueda por nombre de el lugar
             break;
         case '4':
-            busquedaPorCoordenadas(grafo); //busqueda por coordenadas
+            reportarAccidente(grafo); //busqueda por coordenadas del lugar
             break;
         case '5':
-            reportarAccidente(grafo); // se reporta que calle esta bloqueada, para que al momento de busqueda se tenga en cuenta eso    
-            break;
-        case '6':
             printf(AZUL"\nHasta luego!\n"RESET);
             break;
         default:
@@ -445,11 +422,11 @@ int main() {
         }
 
         // Evitamos pausar y limpiar pantalla si el usuario eligió salir
-        if (opcion != '6') {
+        if (opcion != '5') {
             presioneTeclaParaContinuar();
             limpiarPantalla();
         }
 
-    } while (opcion != '6');
+    } while (opcion != '5');
     return 0;
 }

@@ -55,6 +55,7 @@ typedef struct {
     float tiempoPie;
 
     float combustibleAuto;
+    int bloqueada; // 0 = libre, 1 = bloqueada
 } Conexion; //calle entre dos puntos
 
 typedef struct {
@@ -67,6 +68,9 @@ typedef struct {
     HashMap *indiceCoordenadas; // Para guardar sin repeticion
     HashMap *IndiceNombre; // Para guardar nombres sin repeticion
     Vertice **porId; //arreglo de punteros a vertice
+
+    List *ultimaRuta; //lista de ids de la ultima ruta
+    int hayRuta; //hayRtua = 0 si no hay ruta aun
 
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
@@ -666,7 +670,7 @@ void CalcularRuta(Grafo *grafo)
         visitado[i] = 0;
     }
 
-    dist[idOrigen] = 0.0;
+    dist[idOrigen] = 0;
 
     Heap *heap = heap_create();
 
@@ -707,7 +711,7 @@ void CalcularRuta(Grafo *grafo)
             int w = conexion->destino;
             double nuevaDist = dist[u] + conexion->distanciaKm;
 
-            if(nuevaDist < dist[w]){
+            if(nuevaDist < dist[w] && conexion -> bloqueada == 0){
                 dist[w] = nuevaDist;
                 anterior[w] = u;
 
@@ -774,6 +778,7 @@ void CalcularRuta(Grafo *grafo)
 
             idAnteriorRuta = *id;
             free(id);
+            grafo -> hayRuta = 1;
         }
 
         grafo->rutaCalculada = 1;
@@ -784,10 +789,99 @@ void CalcularRuta(Grafo *grafo)
 }
 
 void mostrarInformacion(Grafo *grafo)
-{}
+{
+    //verificar que ya se calculo alguna ruta
+    if (grafo -> hayRuta == 0 || grafo -> ultimaRuta == NULL){
+        printf("Se debe calcular una ruta antes de usar esta opcion\n");
+        return;
+    }
+
+    double totalDistancia = 0;
+    float tiempoAuto = 0;
+    float tiempoBici = 0;
+    float tiempoPie = 0;
+    float combustible = 0;
+
+    printf("\nRuta calculada:\n");
+    printf("========================================\n");
+
+    int *idActual = list_first(grafo -> ultimaRuta);
+    int *idSiguiente = list_next(grafo -> ultimaRuta);
+
+    while(idActual != NULL){
+        Vertice *v = grafo -> porId[*idActual];
+        if (v != NULL){
+            printf("-> %s (%.6f, %.6f)\n", v -> lugar.nombre, v -> lugar.latitud, v -> lugar.longitud);
+        }
+
+        //si hay un vertice siguiente se busca la conexion entre ambos y se suma al total (dist, tiempo y combustible)
+        
+        if(idSiguiente != NULL){
+            Vertice *vActual = grafo -> porId[*idActual];
+            if (vActual != NULL){
+                Conexion *conexion = list_first(vActual -> conexiones);
+                while(conexion != NULL){
+                    if (conexion -> destino == *idSiguiente){
+                        totalDistancia += conexion -> distanciaKm;
+                        tiempoAuto += conexion -> tiempoAuto;
+                        tiempoBici += conexion -> tiempoBici;
+                        tiempoPie += conexion -> tiempoPie;
+                        combustible += conexion -> combustibleAuto;
+                        break;
+                        
+                    }
+                    conexion = list_next(vActual -> conexiones);
+                }
+            }
+        }
+        idActual = idSiguiente;
+        idSiguiente = list_next(grafo -> ultimaRuta);
+    }
+    printf("========================================\n");
+    printf("Distancia total : %.3f km\n", totalDistancia);
+    printf("Tiempo en auto : %.1f min\n", tiempoAuto * 60);
+    printf("Tiempo en bici : %.1f min\n", tiempoBici * 60);
+    printf("Tiempo a pie : %.1f min\n", tiempoPie * 60);
+    printf("Combustible aprox. : %.3f L\n", combustible);
+    
+}
 
 void reportarAccidente(Grafo *grafo){
-    printf("Funcion reportarAccidente() por implementar.\n");
+    if (grafo == NULL || grafo -> cantidadVertices == 0){
+        printf("Primero debes cargar los datos\n");
+        return;
+    }
+
+    //se ingresan los ids de origen y destino de la conexion a bloquear
+    int idOrigen, idDestino;
+    printf("Ingrese el id de Origen: ");
+    scanf("%d", &idOrigen);
+    printf("Ingrese el id de Destino: ");
+    scanf("%d", &idDestino);
+
+    if(idOrigen < 0 || idOrigen >= grafo -> cantidadVertices || idDestino < 0 || idDestino >= grafo -> cantidadVertices){
+        printf("La calle indicada no existe en el mapa\n");
+        return;
+    }
+
+    Vertice *verticeOrigen = grafo -> porId[idOrigen];
+    if(verticeOrigen == NULL){
+        printf("La calle indicada no existe en el mapa\n");
+        return;
+    }
+
+    Conexion *conexion = list_first(verticeOrigen -> conexiones);
+    while(conexion != NULL){
+        if(conexion -> destino == idDestino){
+            conexion -> bloqueada = 1;
+            printf("Accidente reportado correctamente\n");
+            return;
+        }
+        conexion = list_next(verticeOrigen -> conexiones);
+    }
+    printf("La calle indicada no existe en el mapa\n");
+    return;
+    
 }
 
 /*
@@ -795,7 +889,8 @@ flujo general del programa: cargar datos -> cargar grafo -> programar funciones 
 antes de cerrar programa, liberar memoria y cerrar conexiones a la base de datos
 */
 
-int main() {
+int main() 
+{
     limpiarPantalla();
 
     Grafo *grafo = generarGrafo(); // se genera o inicializa el grafo

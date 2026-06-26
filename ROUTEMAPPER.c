@@ -54,6 +54,7 @@ typedef struct {
     float tiempoPie;
 
     float combustibleAuto;
+    int bloqueada; // 0 = libre, 1 = bloqueada
 } Conexion; //calle entre dos puntos
 
 typedef struct {
@@ -231,6 +232,7 @@ Conexion *crearConexion(int idOrigen, int idDestino, double distancia, const cha
         exit(EXIT_FAILURE);
     }
 
+    conexion -> bloqueada = 0;
     conexion -> origen = idOrigen;
     conexion -> destino = idDestino;
     conexion -> distanciaKm = distancia;
@@ -461,7 +463,7 @@ void CalcularRuta(Grafo *grafo){
             int w = conexion -> destino;
             double nuevaDist = dist[u] + conexion -> distanciaKm;
 
-            if(nuevaDist < dist[w]){
+            if(nuevaDist < dist[w] && conexion -> bloqueada == 0){
                 dist[w] = nuevaDist;
                 anterior[w] = u;
 
@@ -579,7 +581,41 @@ void mostrarInformacion(Grafo *grafo){
 }
 
 void reportarAccidente(Grafo *grafo){
-    printf("Funcion reportarAccidente() por implementar.\n");
+    if (grafo == NULL || grafo -> cantidadVertices == 0){
+        printf("Primero debes cargar los datos\n");
+        return;
+    }
+
+    //se ingresan los ids de origen y destino de la conexion a bloquear
+    int idOrigen, idDestino;
+    printf("Ingrese el id de Origen: ");
+    scanf("%d", &idOrigen);
+    printf("Ingrese el id de Destino: ");
+    scanf("%d", &idDestino);
+
+    if(idOrigen < 0 || idOrigen >= grafo -> cantidadVertices || idDestino < 0 || idDestino >= grafo -> cantidadVertices){
+        printf("La calle indicada no existe en el mapa\n");
+        return;
+    }
+
+    Vertice *verticeOrigen = grafo -> porId[idOrigen];
+    if(verticeOrigen == NULL){
+        printf("La calle indicada no existe en el mapa\n");
+        return;
+    }
+
+    Conexion *conexion = list_first(verticeOrigen -> conexiones);
+    while(conexion != NULL){
+        if(conexion -> destino == idDestino){
+            conexion -> bloqueada = 1;
+            printf("Accidente reportado correctamente\n");
+            return;
+        }
+        conexion = list_next(verticeOrigen -> conexiones);
+    }
+    printf("La calle indicada no existe en el mapa\n");
+    return;
+    
 }
 
 /*

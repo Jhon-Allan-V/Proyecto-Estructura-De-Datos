@@ -778,14 +778,13 @@ void CalcularRuta(Grafo *grafo)
 
         grafo->rutaCalculada = 1;
 
-        printf("\nRuta calculada correctamente.\n");
-        printf("Para ver el detalle completo, seleccione la opcion 3: Mostrar informacion.\n");
+        printf("\nRuta calculada correctamente\n");
+        printf("Ir a opcion 3 para ver informacion completa\n");
     }
 }
 
-void mostrarInformacion(Grafo *grafo){
-    printf("Funcion mostrarInformacion() por implementar.\n");
-}
+void mostrarInformacion(Grafo *grafo)
+{}
 
 void reportarAccidente(Grafo *grafo){
     printf("Funcion reportarAccidente() por implementar.\n");

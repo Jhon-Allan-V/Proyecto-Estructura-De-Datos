@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -30,6 +31,11 @@ typedef struct{
     double keyLattitud;
 }keyCordenadas;
 
+typedef struct{
+    int idVertice;
+    double distancia;
+}nodoDijkstra;
+
 typedef struct {
     int id;
     char nombre[MAX];
@@ -59,9 +65,21 @@ typedef struct {
 typedef struct {
     List *vertices; //lista de todos los lugares
     HashMap *indiceCoordenadas; // Para guardar sin repeticion
+    HashMap *IndiceNombre; // Para guardar nombres sin repeticion
+    Vertice **porId; //arreglo de punteros a vertice
 
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
+    int capacidadPorId; 
+
+
+    List *ultimaruta;
+    double ultimaDistanciaKm;
+    double ultimoTiempoAuto;
+    double ultimoTiempoBici;
+    double ultimoTiempoPie;
+    double ultimoCombustible;
+    int rutaCalculada;
 } Grafo;
 
 Grafo *generarGrafo(){
@@ -70,9 +88,27 @@ Grafo *generarGrafo(){
     
     grafo -> vertices = list_create();
     grafo -> indiceCoordenadas = hashmap_create(2000003);
+    grafo -> IndiceNombre = hashmap_create(200003);
+    
+    grafo->capacidadPorId = 1100000;
+    grafo->porId = calloc(grafo->capacidadPorId, sizeof(Vertice *));
+
+    if (grafo->vertices == NULL || grafo->indiceCoordenadas == NULL || grafo->porId == NULL) {
+        printf("Error al crear estructuras del grafo\n");
+        free(grafo);
+        return NULL;
+    }
     
     grafo -> cantidadVertices = 0;
     grafo -> cantidadAristas = 0;
+    
+    grafo->ultimaruta = list_create();
+    grafo->ultimaDistanciaKm = 0;
+    grafo->ultimoTiempoAuto = 0;
+    grafo->ultimoTiempoBici = 0;
+    grafo->ultimoTiempoPie = 0;
+    grafo->ultimoCombustible = 0;
+    grafo->rutaCalculada = 0;   
 
     return grafo;
 }
@@ -164,6 +200,35 @@ double calcularDistancia(double lat1, double lon1, double lat2, double lon2)
 
 }
 
+
+int asegurarCapacidadPorId(Grafo *grafo){
+    if (grafo->cantidadVertices < grafo->capacidadPorId) {
+        return 1;
+    }
+
+    int nuevaCapacidad = grafo->capacidadPorId * 2;
+
+    Vertice **nuevoPorId = realloc(grafo->porId, nuevaCapacidad * sizeof(Vertice *));
+
+    if (nuevoPorId == NULL) {
+        printf("Error: no hay memoria suficiente para ampliar porId\n");
+        return 0;
+    }
+
+    for (int i = grafo->capacidadPorId; i < nuevaCapacidad; i++) {
+        nuevoPorId[i] = NULL;
+    }
+
+    grafo->porId = nuevoPorId;
+    grafo->capacidadPorId = nuevaCapacidad;
+
+    printf("porId ampliado a %d posiciones\n", nuevaCapacidad);
+
+    return 1;
+}
+
+
+
 /*
 
 Buscar un vertice por la coordenada si este ya existe retorna el vertice existente
@@ -192,7 +257,17 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
         return NULL;
     }
 
+    if (!asegurarCapacidadPorId(grafo)) 
+    {
+    
+    free(nuevo);
+    free(key);
+    
+    return NULL;
+    }
+
     nuevo->lugar.id = grafo->cantidadVertices;
+    grafo->porId[grafo->cantidadVertices] = nuevo;  
 
     strncpy(nuevo->lugar.nombre, nombre ? nombre : "Sin nombre", MAX); // Copia nombre de la calle dentro del vertice si no existe queda sin nombre
     nuevo->lugar.nombre[MAX - 1] = '\0'; // Asegura que el string termine bien a pesar de superar el limite
@@ -210,43 +285,122 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
     return nuevo;
 }
 
-Conexion *crearConexion(int idOrigen, int idDestino, double distancia, const char *clase, const char *oneway){
-    Conexion *conexion = malloc(sizeof(Conexion));
-    if (conexion == NULL){
-        puts("Error al crear conexion.");
-        presioneTeclaParaContinuar();
-        limpiarPantalla();
-        exit(EXIT_FAILURE);
+void limpiarBufferEntrada()
+{
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+char *copiarString(const char *texto)
+{
+    char *copia = malloc(strlen(texto) + 1);
+    if(copia == NULL) return NULL; 
+    
+    strcpy(copia, texto); 
+    return copia; 
+}
+
+void normalizarUnNombre(const char *origen, char *destino)
+{
+    int k = 0;
+
+    if(origen == NULL)
+    {
+        destino[0] = '\0';
+        return;
+    }
+    
+    for(int i = 0; origen[i] != '\0'; i++)
+    {
+        unsigned char c = (unsigned char)origen[i]; 
+
+        if(isspace(c) || c == '-' || c == '.' || c == ',')
+        {
+            continue;
+        }
+        destino[k++] = tolower(c);
+    }
+    destino[k] = '\0';
+}
+
+int listaVertices(List *lista, int ID)
+{
+    Vertice *v = list_first(lista);
+
+    while(v != NULL)
+    {
+        if(v->lugar.id == ID) return 1;
+
+        v = list_next(lista);
+    }
+    return 0;
+}
+
+void AgregarVerticeNombreHash(Grafo *grafo, Vertice *vertice, const char *nombre)
+{
+    if(grafo == NULL || vertice == NULL || nombre == NULL) return; 
+
+    if(strcmp(nombre, "Sin nombre") == 0) return; 
+
+    char nombreNormalizado[MAX]; 
+    normalizarUnNombre(nombre, nombreNormalizado); 
+
+    if(strlen(nombreNormalizado) == 0) return;
+
+    List *listaCoincidentes = hashmap_search(grafo->IndiceNombre, nombreNormalizado);
+
+    if(listaCoincidentes == NULL)
+    {
+        listaCoincidentes = list_create();
+
+        char *key = copiarString(nombreNormalizado);
+        hashmap_insert(grafo->IndiceNombre, key, listaCoincidentes); 
     }
 
-    conexion -> origen = idOrigen;
-    conexion -> destino = idDestino;
-    conexion -> distanciaKm = distancia;
+    if(!listaVertices(listaCoincidentes, vertice->lugar.id)) list_pushBack(listaCoincidentes, vertice);
+}
 
-    // Asignar tiempos y combustible según la clase de calle
+
+Conexion *crearConexion(int idOrigen, int idDestino, double distancia, const char *clase, const char *oneway)
+{
+    Conexion *conexion = malloc(sizeof(Conexion));
+
+    if (conexion == NULL){
+        puts("Error al crear conexion.");
+        return NULL;
+    }
+
+    if (clase == NULL) {
+        clase = "Desconocido";
+    }
+
+    conexion->origen = idOrigen;
+    conexion->destino = idDestino;
+    conexion->distanciaKm = distancia;
+
     if (strcmp(clase, "residential") == 0) {
-        // velocidad = distancia / tiempo -> tiempo = distancia / velocidad MAX de la calle
-
-        conexion -> tiempoAuto = distancia / 30.0; // 30 km/h
-        conexion -> tiempoBici = distancia / 15.0; // 15 km/h
-        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
-        conexion -> combustibleAuto = distancia * 0.08; // 0.08 litros/km
-    } else if (strcmp(clase, "primary") == 0) {
-        conexion -> tiempoAuto = distancia / 60.0; // 60 km/h
-        conexion -> tiempoBici = distancia / 20.0; // 20 km/h
-        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
-        conexion -> combustibleAuto = distancia * 0.1; // 0.1 litros/km
-    } else if (strcmp(clase, "secondary") == 0) {
-        conexion -> tiempoAuto = distancia / 50.0; // 50 km/h
-        conexion -> tiempoBici = distancia / 18.0; // 18 km/h
-        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
-        conexion -> combustibleAuto = distancia * 0.09; // 0.09 litros/km
-    } else {
-        // Valores por defecto para otras clases de calles
-        conexion -> tiempoAuto = distancia / 40.0; // 40 km/h
-        conexion -> tiempoBici = distancia / 12.0; // 12 km/h
-        conexion -> tiempoPie = distancia / 5.0; // 5 km/h
-        conexion -> combustibleAuto = distancia * 0.07; // 0.07 litros/km
+        conexion->tiempoAuto = distancia / 30.0;
+        conexion->tiempoBici = distancia / 15.0;
+        conexion->tiempoPie = distancia / 5.0;
+        conexion->combustibleAuto = distancia * 0.08;
+    } 
+    else if (strcmp(clase, "primary") == 0) {
+        conexion->tiempoAuto = distancia / 60.0;
+        conexion->tiempoBici = distancia / 20.0;
+        conexion->tiempoPie = distancia / 5.0;
+        conexion->combustibleAuto = distancia * 0.1;
+    } 
+    else if (strcmp(clase, "secondary") == 0) {
+        conexion->tiempoAuto = distancia / 50.0;
+        conexion->tiempoBici = distancia / 18.0;
+        conexion->tiempoPie = distancia / 5.0;
+        conexion->combustibleAuto = distancia * 0.09;
+    } 
+    else {
+        conexion->tiempoAuto = distancia / 40.0;
+        conexion->tiempoBici = distancia / 12.0;
+        conexion->tiempoPie = distancia / 5.0;
+        conexion->combustibleAuto = distancia * 0.07;
     }
 
     return conexion;
@@ -256,6 +410,11 @@ void cargarDatosAlGrafo(Grafo *grafo, const char *nombre, const char *clase, con
     //filtrar datos repetidos a traves de el hashmap del grafo, mediante las coordenadas
     Vertice *verticeOrigen = Obtener_CrearVertice(grafo, keyCor1.keyLongitud, keyCor1.keyLattitud, nombre);
     Vertice *verticeDestino = Obtener_CrearVertice(grafo, keyCor2.keyLongitud, keyCor2.keyLattitud, nombre);
+    
+    if (verticeOrigen == NULL || verticeDestino == NULL) return;
+
+    AgregarVerticeNombreHash(grafo, verticeOrigen, nombre);
+    AgregarVerticeNombreHash(grafo, verticeDestino, nombre);
     
     double distanciaPuntos = calcularDistancia(verticeOrigen -> lugar.latitud, verticeOrigen -> lugar.longitud, verticeDestino -> lugar.latitud, verticeDestino -> lugar.longitud);
 
@@ -308,7 +467,8 @@ void obtenerInformacionDB(Grafo *grafo){
 
     sqlite3_stmt *stmt;
     // leer todos los segmentos de la tabla gis_osm_roads_free, que contiene las calles y caminos de chile
-    const char *comando = "SELECT fid, geom, name, fclass, oneway FROM gis_osm_roads_free;"; //LIMIT 50;
+    const char *comando = "SELECT fid, geom, name, fclass, oneway ""FROM gis_osm_roads_free ";
+    
     rc = sqlite3_prepare_v2(db, comando, -1, &stmt, NULL);
 
     if (rc != SQLITE_OK){
@@ -353,8 +513,274 @@ void obtenerInformacionDB(Grafo *grafo){
     printf(VERDE"* Numero de aristas cargados" AZUL"(conexiones entre lugares): " AMARILLO"%d\n"RESET, grafo -> cantidadAristas);
 }
 
-void CalcularRuta(Grafo *grafo){
-    printf("Funcion CalcularRuta() por implementar.\n");
+
+Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto)
+{
+    char nombreBuscado[MAX];
+
+    printf("\nIngrese Nombre de calle para %s: ", tipoPunto);
+    limpiarBufferEntrada();
+    fgets(nombreBuscado, MAX, stdin);
+
+    nombreBuscado[strcspn(nombreBuscado, "\n")] = '\0'; 
+
+    char nombreNormalizado[MAX];
+    normalizarUnNombre(nombreBuscado, nombreNormalizado);
+
+    List *coincidencia = hashmap_search(grafo->IndiceNombre, nombreNormalizado);
+
+    if(coincidencia == NULL)
+    {
+        printf("No se encontraron coincidencias para: %s\n", nombreBuscado);
+        return NULL;
+    }
+
+    printf("\nCoincidencias encontradas:\n");
+    printf("============================================================\n");
+
+    int contador = 0;
+    Vertice *v = list_first(coincidencia); 
+
+    while(v != NULL)
+    {
+        printf("ID: %d | %s | Lat: %.6f | Lon: %.6f\n", v->lugar.id, v->lugar.nombre, v->lugar.latitud, v->lugar.longitud);
+
+        contador ++; 
+
+        v = list_next(coincidencia);
+    }
+
+    printf("============================================================\n");
+
+    int opcion;
+
+    printf("\nSeleccione el punto:\n");
+    printf("1) Seleccionar por ID\n");
+    printf("2) Seleccionar por Coordenadas exactas\n");
+    printf("Ingrese Opcion: ");
+    scanf("%d", &opcion);
+
+
+    if(opcion == 1)
+    {
+        int id;
+        printf("Ingrese ID: ");
+        scanf("%d", &id);
+
+        if(id < 0 || id >= grafo->cantidadVertices || grafo->porId[id] == NULL)
+        {
+            printf("ID no valido\n");
+            return NULL; 
+        }
+
+        return grafo->porId[id];
+    }
+    if(opcion == 2)
+    {
+        double lon, lat; 
+
+        printf("Ingrese longitud: ");
+        scanf("%lf", &lon);
+
+        printf("\nIngrese latitud: ");
+        scanf("%lf", &lat);
+
+        char *key = UnionCoordenada(lon, lat);
+        Vertice *seleccionado = hashmap_search(grafo->indiceCoordenadas, key);
+        free(key); 
+
+        if(seleccionado == NULL)
+        {
+            printf("No se encontro un vertice con esas coordenadas exactas\n");
+            return NULL;
+        }
+        return seleccionado; 
+    }
+    printf("Opcion no valida\n");
+    return NULL;
+}
+
+Conexion *buscarConexionEntre(Grafo *grafo, int idInicio, int idFinal)
+{
+    if(grafo == NULL || idInicio < 0 || idInicio >= grafo->cantidadVertices) return NULL;
+
+    Vertice *origen = grafo->porId[idInicio];
+
+    if(origen == NULL) return NULL;
+
+    Conexion *conexion = list_first(origen->conexiones);
+
+    while(conexion != NULL)
+    {
+        if(conexion->destino == idInicio) return conexion; 
+
+        conexion = list_next(origen->conexiones);
+    }
+    return NULL;
+}
+
+void CalcularRuta(Grafo *grafo)
+{
+    if (grafo == NULL || grafo->cantidadVertices == 0){
+        printf("Primero debes cargar los datos\n");
+        return;
+    }
+
+    printf("\nSeleccionar Origen\n");
+    Vertice *origen = SeleccionarVerticePorNombre(grafo, "Origen");
+
+    if(origen == NULL)
+    {
+        printf("Error al seleccionar origen intentelo nuevamente");
+        return; 
+    }
+
+    printf("Seleccionar Destino\n");
+    Vertice *destino = SeleccionarVerticePorNombre(grafo, "Destino");
+
+    if(destino == NULL)
+    {
+        printf("Error al seleccionar destino intentelo nuevamente");
+        return; 
+    }
+
+    int n = grafo->cantidadVertices;
+    int idOrigen = origen->lugar.id;
+    int idDestino = destino->lugar.id;
+
+    double *dist = malloc(n * sizeof(double));
+    int *anterior = malloc(n * sizeof(int));
+    int *visitado = malloc(n * sizeof(int));
+
+    if (dist == NULL || anterior == NULL || visitado == NULL){
+        printf("Error al reservar memoria para Dijkstra\n");
+        free(dist);
+        free(anterior);
+        free(visitado);
+        return;
+    }
+
+    for(int i = 0; i < n; i++){
+        dist[i] = 1e18;
+        anterior[i] = -1;
+        visitado[i] = 0;
+    }
+
+    dist[idOrigen] = 0.0;
+
+    Heap *heap = heap_create();
+
+    nodoDijkstra *nodoInicio = malloc(sizeof(nodoDijkstra));
+    nodoInicio->idVertice = idOrigen;
+    nodoInicio->distancia = 0.0;
+
+    heap_push(heap, nodoInicio, 0);
+
+    printf("\nCalculando ruta...\n");
+
+    while(!heapEstaVacia(heap)){
+        nodoDijkstra *actual = (nodoDijkstra *) heap_top(heap);
+        heap_pop(heap);
+
+        int u = actual->idVertice;
+        free(actual);
+
+        if (visitado[u] == 1){
+            continue;
+        }
+
+        visitado[u] = 1;
+
+        if (u == idDestino){
+            break;
+        }
+
+        Vertice *verticeActual = grafo->porId[u];
+
+        if(verticeActual == NULL){
+            continue;
+        }
+
+        Conexion *conexion = list_first(verticeActual->conexiones);
+
+        while (conexion != NULL) {
+            int w = conexion->destino;
+            double nuevaDist = dist[u] + conexion->distanciaKm;
+
+            if(nuevaDist < dist[w]){
+                dist[w] = nuevaDist;
+                anterior[w] = u;
+
+                nodoDijkstra *nodoVecino = malloc(sizeof(nodoDijkstra));
+                nodoVecino->idVertice = w;
+                nodoVecino->distancia = nuevaDist;
+
+                heap_push(heap, nodoVecino, (int)(-nuevaDist * 1000));
+            }
+
+            conexion = list_next(verticeActual->conexiones);
+        }
+    }
+
+    if(dist[idDestino] >= 1e18){
+        printf("\nNo existe ruta entre los puntos dados\n");
+    }
+
+    else
+    
+    {
+        Stack *pila = stack_create(NULL);
+
+        int nodoActual = idDestino;
+
+        while (nodoActual != -1)
+        {
+            int *id = malloc(sizeof(int));
+            *id = nodoActual;
+            stack_push(pila, id);
+            nodoActual = anterior[nodoActual];
+        }
+
+        // Limpiar ruta anterior
+        list_clean(grafo->ultimaruta);
+
+        grafo->ultimaDistanciaKm = dist[idDestino];
+        grafo->ultimoTiempoAuto = 0;
+        grafo->ultimoTiempoBici = 0;
+        grafo->ultimoTiempoPie = 0;
+        grafo->ultimoCombustible = 0;
+
+        int idAnteriorRuta = -1;
+
+        while(!pilaEstaVacia(pila)) 
+        {
+            int *id = (int *) stack_pop(pila);
+            Vertice *v = grafo->porId[*id];
+
+            if (v != NULL) list_pushBack(grafo->ultimaruta, v);
+
+            if (idAnteriorRuta != -1)
+            {
+                Conexion *conexion = buscarConexionEntre(grafo, idAnteriorRuta, *id);
+
+                if (conexion != NULL)
+                {
+                    grafo->ultimoTiempoAuto += conexion->tiempoAuto;
+                    grafo->ultimoTiempoBici += conexion->tiempoBici;
+                    grafo->ultimoTiempoPie += conexion->tiempoPie;
+                    grafo->ultimoCombustible += conexion->combustibleAuto;
+                }
+            }
+
+            idAnteriorRuta = *id;
+            free(id);
+        }
+
+        grafo->rutaCalculada = 1;
+
+        printf("\nRuta calculada correctamente.\n");
+        printf("Para ver el detalle completo, seleccione la opcion 3: Mostrar informacion.\n");
+    }
 }
 
 void mostrarInformacion(Grafo *grafo){

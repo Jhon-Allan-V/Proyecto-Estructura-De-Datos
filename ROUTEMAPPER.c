@@ -66,6 +66,9 @@ typedef struct {
     HashMap *indiceCoordenadas; // Para guardar sin repeticion
     Vertice **porId; //arreglo de punteros a vertice
 
+    List *ultimaRuta; //lista de ids de la ultima ruta
+    int hayRuta; //hayRtua = 0 si no hay ruta aun
+
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
 } Grafo;
@@ -77,7 +80,8 @@ Grafo *generarGrafo(){
     grafo -> vertices = list_create();
     grafo -> indiceCoordenadas = hashmap_create(2000003);
     grafo -> porId = malloc(1100000 * sizeof(Vertice *));
-    
+    grafo -> ultimaRuta = NULL;
+    grafo -> hayRuta = 0;
     grafo -> cantidadVertices = 0;
     grafo -> cantidadAristas = 0;
 
@@ -367,6 +371,14 @@ void CalcularRuta(Grafo *grafo){
         return;
     }
 
+    //se limpia la ultima ruta, si existe
+    if(grafo -> ultimaRuta != NULL){
+        list_clean(grafo -> ultimaRuta);
+    }
+    grafo -> ultimaRuta = list_create();
+    grafo -> hayRuta = 0;
+    
+
     //coordenadas de origen y destino (latitud y longitud)
     double lonOrigen, latOrigen, lonDestino, latDestino;
 
@@ -411,13 +423,13 @@ void CalcularRuta(Grafo *grafo){
         visitado[i] = 0;
     }
 
-    dist[idOrigen] = 0.0;
+    dist[idOrigen] = 0;
 
     Heap *heap = heap_create();
 
     nodoDijkstra *nodoInicio = malloc(sizeof(nodoDijkstra));
     nodoInicio -> idVertice = idOrigen;
-    nodoInicio -> distancia = 0.0;
+    nodoInicio -> distancia = 0;
     heap_push(heap, nodoInicio, 0);
 
     printf("\nCalculando Ruta..\n");
@@ -484,11 +496,18 @@ void CalcularRuta(Grafo *grafo){
         while(!pilaEstaVacia(pila)) {
             int *id = (int *) stack_pop(pila);
             Vertice *v = grafo -> porId[*id];
+
+            //se guarda id en la ultima ruta
+            int *idGuardado = malloc(sizeof(int));
+            *idGuardado = *id;
+            list_pushBack(grafo -> ultimaRuta, idGuardado);
+            
             if (v != NULL){
                 printf("-> %s (%.6f, %.6f)\n", v -> lugar.nombre, v -> lugar.latitud, v -> lugar.longitud);
 
             }
             free(id);
+            grafo -> hayRuta = 1;
         }
         printf("=============================================\n");
         printf("Distancia total : %.3f km\n", dist[idDestino]);
@@ -503,7 +522,60 @@ void CalcularRuta(Grafo *grafo){
 }
 
 void mostrarInformacion(Grafo *grafo){
-    printf("Funcion mostrarInformacion() por implementar.\n");
+    //verificar que ya se calculo alguna ruta
+    if (grafo -> hayRuta == 0 || grafo -> ultimaRuta == NULL){
+        printf("Se debe calcular una ruta antes de usar esta opcion\n");
+        return;
+    }
+
+    double totalDistancia = 0;
+    float tiempoAuto = 0;
+    float tiempoBici = 0;
+    float tiempoPie = 0;
+    float combustible = 0;
+
+    printf("\nRuta calculada:\n");
+    printf("========================================\n");
+
+    int *idActual = list_first(grafo -> ultimaRuta);
+    int *idSiguiente = list_next(grafo -> ultimaRuta);
+
+    while(idActual != NULL){
+        Vertice *v = grafo -> porId[*idActual];
+        if (v != NULL){
+            printf("-> %s (%.6f, %.6f)\n", v -> lugar.nombre, v -> lugar.latitud, v -> lugar.longitud);
+        }
+
+        //si hay un vertice siguiente se busca la conexion entre ambos y se suma al total (dist, tiempo y combustible)
+        
+        if(idSiguiente != NULL){
+            Vertice *vActual = grafo -> porId[*idActual];
+            if (vActual != NULL){
+                Conexion *conexion = list_first(vActual -> conexiones);
+                while(conexion != NULL){
+                    if (conexion -> destino == *idSiguiente){
+                        totalDistancia += conexion -> distanciaKm;
+                        tiempoAuto += conexion -> tiempoAuto;
+                        tiempoBici += conexion -> tiempoBici;
+                        tiempoPie += conexion -> tiempoPie;
+                        combustible += conexion -> combustibleAuto;
+                        break;
+                        
+                    }
+                    conexion = list_next(vActual -> conexiones);
+                }
+            }
+        }
+        idActual = idSiguiente;
+        idSiguiente = list_next(grafo -> ultimaRuta);
+    }
+    printf("========================================\n");
+    printf("Distancia total : %.3f km\n", totalDistancia);
+    printf("Tiempo en auto : %.1f min\n", tiempoAuto * 60);
+    printf("Tiempo en bici : %.1f min\n", tiempoBici * 60);
+    printf("Tiempo a pie : %.1f min\n", tiempoPie * 60);
+    printf("Combustible aprox. : %.3f L\n", combustible);
+    
 }
 
 void reportarAccidente(Grafo *grafo){

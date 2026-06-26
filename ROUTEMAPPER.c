@@ -30,6 +30,11 @@ typedef struct{
     double keyLattitud;
 }keyCordenadas;
 
+typedef struct{
+    int idVertice;
+    double distancia;
+}nodoDijkstra;
+
 typedef struct {
     int id;
     char nombre[MAX];
@@ -59,6 +64,7 @@ typedef struct {
 typedef struct {
     List *vertices; //lista de todos los lugares
     HashMap *indiceCoordenadas; // Para guardar sin repeticion
+    Vertice **porId; //arreglo de punteros a vertice
 
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
@@ -70,6 +76,7 @@ Grafo *generarGrafo(){
     
     grafo -> vertices = list_create();
     grafo -> indiceCoordenadas = hashmap_create(2000003);
+    grafo -> porId = malloc(1100000 * sizeof(Vertice *));
     
     grafo -> cantidadVertices = 0;
     grafo -> cantidadAristas = 0;
@@ -193,6 +200,7 @@ Vertice *Obtener_CrearVertice(Grafo *grafo, double lon, double lat, const char *
     }
 
     nuevo->lugar.id = grafo->cantidadVertices;
+    grafo -> porId[grafo -> cantidadVertices] = nuevo;
 
     strncpy(nuevo->lugar.nombre, nombre ? nombre : "Sin nombre", MAX); // Copia nombre de la calle dentro del vertice si no existe queda sin nombre
     nuevo->lugar.nombre[MAX - 1] = '\0'; // Asegura que el string termine bien a pesar de superar el limite
@@ -354,7 +362,144 @@ void obtenerInformacionDB(Grafo *grafo){
 }
 
 void CalcularRuta(Grafo *grafo){
-    printf("Funcion CalcularRuta() por implementar.\n");
+    if (grafo == NULL || grafo -> cantidadVertices == 0){
+        printf("Primero debes cargar los datos\n");
+        return;
+    }
+
+    //coordenadas de origen y destino (latitud y longitud)
+    double lonOrigen, latOrigen, lonDestino, latDestino;
+
+    printf("Ingrese longitud de origen: ");
+    scanf("%lf", &lonOrigen);
+    printf("Ingrese latitud de origen: ");
+    scanf("%lf", &latOrigen);
+    printf("Ingrese longitud de destino: ");
+    scanf("%lf", &lonDestino);
+    printf("Ingrese latitud de destino: ");
+    scanf("%lf", &latDestino);
+
+    char *keyOrigen = UnionCoordenada(lonOrigen, latOrigen);
+    char *keyDestino = UnionCoordenada(lonDestino, latDestino);
+    Vertice  *origen = hashmap_search(grafo -> indiceCoordenadas, keyOrigen);
+    Vertice  *destino = hashmap_search(grafo -> indiceCoordenadas, keyDestino);
+
+    free(keyOrigen);
+    free(keyDestino);
+
+    if(origen == NULL){
+        printf("No se encontro el punto de ORIGEN en el grafo\n");
+        return;
+    }
+
+    if(destino == NULL){
+        printf("No se encontro el punto de DESTINO en el grafo\n");
+        return;
+    }
+
+    int n = grafo -> cantidadVertices;
+    int idOrigen = origen -> lugar.id;
+    int idDestino = destino -> lugar.id;
+
+    double *dist = malloc(n * sizeof(double));
+    int *anterior = malloc(n * sizeof(int));
+    int *visitado = malloc(n * sizeof(int));
+
+    for(int i =0; i < n; i++){
+        dist[i] = 1e18;
+        anterior[i] = -1;
+        visitado[i] = 0;
+    }
+
+    dist[idOrigen] = 0.0;
+
+    Heap *heap = heap_create();
+
+    nodoDijkstra *nodoInicio = malloc(sizeof(nodoDijkstra));
+    nodoInicio -> idVertice = idOrigen;
+    nodoInicio -> distancia = 0.0;
+    heap_push(heap, nodoInicio, 0);
+
+    printf("\nCalculando Ruta..\n");
+
+    while(!heapEstaVacia(heap)){
+        nodoDijkstra *actual = (nodoDijkstra *) heap_top(heap);
+        heap_pop(heap);
+
+        int u = actual -> idVertice;
+        free(actual);
+
+        if (visitado[u] == 1){
+            continue;
+        }
+        visitado[u] = 1;
+
+        //Si se llega al destino se termina
+        if (u == idDestino){
+            break;
+        }
+
+        //se busca el vertice u en la lista de vertices
+        Vertice *verticeActual = grafo -> porId[u];
+        if(verticeActual == NULL) continue;
+
+        //se revisan vecino y se actualiza distancia si encontramos camino mas corto
+        Conexion *conexion = list_first(verticeActual -> conexiones);
+        while (conexion != NULL) {
+            int w = conexion -> destino;
+            double nuevaDist = dist[u] + conexion -> distanciaKm;
+
+            if(nuevaDist < dist[w]){
+                dist[w] = nuevaDist;
+                anterior[w] = u;
+
+                nodoDijkstra *nodoVecino = malloc(sizeof(nodoDijkstra));
+                nodoVecino -> idVertice = w;
+                nodoVecino -> distancia = nuevaDist;
+
+                heap_push(heap, nodoVecino, (int)(-nuevaDist * 1000));
+            }
+            conexion = list_next(verticeActual -> conexiones);
+        }
+    }
+
+    if(dist[idDestino] >= 1e18){
+        printf("\nNo existe ruta entre los puntos dados\n");
+
+    }
+    else{
+        Stack *pila = stack_create(NULL);
+
+        int nodoActual = idDestino;
+        while (nodoActual != -1){
+            int *id = malloc(sizeof(int));
+            *id = nodoActual;
+            stack_push(pila,id);
+            nodoActual = anterior[nodoActual];
+        }
+
+        printf("\nRuta encontrada\n");
+        printf("=============================================\n");
+
+        while(!pilaEstaVacia(pila)) {
+            int *id = (int *) stack_pop(pila);
+            Vertice *v = grafo -> porId[*id];
+            if (v != NULL){
+                printf("-> %s (%.6f, %.6f)\n", v -> lugar.nombre, v -> lugar.latitud, v -> lugar.longitud);
+
+            }
+            free(id);
+        }
+        printf("=============================================\n");
+        printf("Distancia total : %.3f km\n", dist[idDestino]);
+    }
+
+    free(dist);
+    free(anterior);
+    free(visitado);
+    free(heap);
+
+    
 }
 
 void mostrarInformacion(Grafo *grafo){

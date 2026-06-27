@@ -163,7 +163,7 @@ Compilar el proyecto con:
 
 ```bash
 COMANDO: gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
-
+```
 
 Ejecutar el proyecto desde la terminal con:
 
@@ -171,7 +171,7 @@ Ejecutar el proyecto desde la terminal con:
 
 ```bash
 COMANDO: ./ROUTEMAPPER.exe
-
+```
 
 
 
@@ -195,7 +195,7 @@ Despues de cargar la informacion, ya podremos hacer consulta de rutas; atraves d
 
 Donde debera de ingresar el nombre de la calle de origen:
 
-```EJEMPLO:
+### EJEMPLO:
 Ingrese Nombre de calle para Origen: Pacifico
 
 De modo que quede asi:
@@ -212,16 +212,16 @@ En el cual tendra dos opciones a elegir:
 
 Si elige la opcion numero 1), debera de ingresar el ID de la calle de origen a seleccionar
 
-```EJEMPLO:
+### EJEMPLO:
 Ingrese ID: 7706
 
 Posterior a esto, debera de ingresar el nombre de la calle para destino
 
-```EJEMPLO:
+### EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad
 
 
 Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS, en este ejemplo ahora se seleccionara la opcion 2) (coordenadas), donde debera de ingresar la longitud y latitud de donde se encuentra la calle de destino a buscar
 
-```EJEMPLO:
+### EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad

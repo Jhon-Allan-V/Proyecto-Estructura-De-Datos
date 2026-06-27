@@ -69,9 +69,6 @@ typedef struct {
     HashMap *IndiceNombre; // Para guardar nombres sin repeticion
     Vertice **porId; //arreglo de punteros a vertice
 
-    List *ultimaRuta; //lista de ids de la ultima ruta
-    int hayRuta; //hayRtua = 0 si no hay ruta aun
-
     int cantidadVertices; //cantidad de lugares
     int cantidadAristas; //cantidad de rutas
     int capacidadPorId; 
@@ -106,7 +103,7 @@ Grafo *generarGrafo(){
     grafo -> cantidadVertices = 0;
     grafo -> cantidadAristas = 0;
     
-    grafo->ultimaruta = list_create();
+    grafo->ultimaruta = list_create(); 
     grafo->ultimaDistanciaKm = 0;
     grafo->ultimoTiempoAuto = 0;
     grafo->ultimoTiempoBici = 0;
@@ -381,6 +378,7 @@ Conexion *crearConexion(int idOrigen, int idDestino, double distancia, const cha
     conexion->origen = idOrigen;
     conexion->destino = idDestino;
     conexion->distanciaKm = distancia;
+    conexion->bloqueada = 0; 
 
     if (strcmp(clase, "residential") == 0) {
         conexion->tiempoAuto = distancia / 30.0;
@@ -517,8 +515,65 @@ void obtenerInformacionDB(Grafo *grafo){
     printf(VERDE"* Numero de aristas cargados" AZUL"(conexiones entre lugares): " AMARILLO"%d\n"RESET, grafo -> cantidadAristas);
 }
 
+void CalcularRutasExistentes(Grafo *grafo, int idOrigen, int *alcanzable, int accidentes)
+{
+    if(grafo == NULL || alcanzable == NULL) return;
 
-Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto)
+    for(int i=0; i < grafo->cantidadVertices; i++)
+    {
+        alcanzable[i] = 0;
+    }
+
+    Stack *pila =stack_create(NULL);
+
+    int  *inicio = malloc(sizeof(int));
+    *inicio = idOrigen;
+    stack_push(pila, inicio); 
+    
+    alcanzable[idOrigen] = 1;
+
+    while(!pilaEstaVacia(pila))
+    {
+        int *idactualptr = (int *) stack_pop(pila);
+        int idactual = *idactualptr;
+        free(idactualptr); 
+
+        Vertice *verticeActual = grafo->porId[idactual];
+
+        if(verticeActual == NULL) continue;
+
+        Conexion *conexion = list_first(verticeActual->conexiones);
+
+        while (conexion != NULL)
+        {
+            int vecino = conexion->destino;
+
+            if(vecino >= 0 && vecino < grafo->cantidadVertices)
+            {
+                if(accidentes == 1 && conexion->bloqueada == 1)
+                {
+                    conexion = list_next(verticeActual->conexiones);
+                    continue;
+                }
+
+                if(alcanzable[vecino] == 0)
+                {
+                    alcanzable[vecino] = 1;
+
+                    int *nuevoID = malloc(sizeof(int));
+                    *nuevoID = vecino;
+                    stack_push(pila, nuevoID);
+                }
+            }
+            conexion = list_next(verticeActual->conexiones);
+        }
+        
+    }
+    free(pila);
+}
+
+
+Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto, int *alcanzableSinAccidente, int *alcanzableConAccidente)
 {
     char nombreBuscado[MAX];
 
@@ -540,21 +595,48 @@ Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto)
     }
 
     printf("\nCoincidencias encontradas:\n");
-    printf("============================================================\n");
+    printf("====================================================================================================================\n");
+    printf("%-8s | %-30s | %-12s | %-12s | %-12s | %-18s\n","ID", "Nombre", "Latitud", "Longitud", "Ruta", "Accidentes");
+    printf("====================================================================================================================\n");
 
     int contador = 0;
     Vertice *v = list_first(coincidencia); 
 
     while(v != NULL)
     {
-        printf("ID: %d | %s | Lat: %.6f | Lon: %.6f\n", v->lugar.id, v->lugar.nombre, v->lugar.latitud, v->lugar.longitud);
+        char Ruta[20];
+        char Accidente[25];
 
-        contador ++; 
+        if(alcanzableSinAccidente == NULL || alcanzableConAccidente == NULL)
+        {
+            strcpy(Ruta, "ORIGEN");
+            strcpy(Accidente, "-");
+        }
+        else if(alcanzableConAccidente[v->lugar.id] == 1)
+        {
+            strcpy(Ruta, "Hay Ruta");
+            strcpy(Accidente, "No Hay Accidente");
+        }
+        else if(alcanzableSinAccidente[v->lugar.id] == 1 && alcanzableConAccidente[v->lugar.id] == 0)
+        {
+            strcpy(Ruta, "No Hay Ruta");
+            strcpy(Accidente, "Si Hay Accidente");
+        }
+        else
+        {
+            strcpy(Ruta, "No Hay Ruta");
+            strcpy(Accidente, "No Hay Accidente");
+        }
+
+        printf("%-8d | %-30s | %-12.6f | %-12.6f | %-12s | %-18s\n", v->lugar.id, v->lugar.nombre, v->lugar.latitud, v->lugar.longitud, Ruta, Accidente); 
+
+        contador ++;
 
         v = list_next(coincidencia);
     }
 
-    printf("============================================================\n");
+    printf("====================================================================================================================\n");
+    printf("Coincidencias en total: %d\n", contador); 
 
     int opcion;
 
@@ -577,11 +659,26 @@ Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto)
             return NULL; 
         }
 
+        if(alcanzableConAccidente != NULL && alcanzableConAccidente[id] == 0)
+        {
+            if(alcanzableSinAccidente != NULL && alcanzableSinAccidente[id] == 1)
+            {
+                printf("\n La ruta no se recomienda ya que existe un accidente bloqueando el camino"); 
+            }
+            else
+            {
+                printf("\n No existe una ruta entre ambos puntos"); 
+            }
+            
+            return NULL; 
+        }
+
         return grafo->porId[id];
     }
     if(opcion == 2)
     {
         double lon, lat; 
+        
 
         printf("Ingrese longitud: ");
         scanf("%lf", &lon);
@@ -598,6 +695,23 @@ Vertice *SeleccionarVerticePorNombre(Grafo *grafo, const char *tipoPunto)
             printf("No se encontro un vertice con esas coordenadas exactas\n");
             return NULL;
         }
+
+        int id = seleccionado->lugar.id;
+
+        if(alcanzableConAccidente != NULL && alcanzableConAccidente[id] == 0)
+        {
+            if(alcanzableSinAccidente != NULL && alcanzableSinAccidente[id] == 1)
+            {
+                printf("\nLa ruta no se recomienda ya que existe un accidente bloqueando el camino\n"); 
+            }
+            else
+            {
+                printf("\nNo existe una ruta entre ambos puntos\n"); 
+            }
+
+            return NULL; 
+        }
+
         return seleccionado; 
     }
     printf("Opcion no valida\n");
@@ -616,7 +730,7 @@ Conexion *buscarConexionEntre(Grafo *grafo, int idInicio, int idFinal)
 
     while(conexion != NULL)
     {
-        if(conexion->destino == idInicio) return conexion; 
+        if(conexion->destino == idFinal) return conexion; 
 
         conexion = list_next(origen->conexiones);
     }
@@ -631,7 +745,7 @@ void CalcularRuta(Grafo *grafo)
     }
 
     printf("\nSeleccionar Origen\n");
-    Vertice *origen = SeleccionarVerticePorNombre(grafo, "Origen");
+    Vertice *origen = SeleccionarVerticePorNombre(grafo, "Origen", NULL, NULL);
 
     if(origen == NULL)
     {
@@ -639,12 +753,27 @@ void CalcularRuta(Grafo *grafo)
         return; 
     }
 
+    int *alcanzableSinAccidente = malloc(grafo->cantidadVertices * sizeof(int));
+    int *alcanzableConAccidente = malloc(grafo->cantidadVertices * sizeof(int));
+
+    if(alcanzableSinAccidente == NULL || alcanzableConAccidente == NULL)
+    {
+        free(alcanzableConAccidente);
+        free(alcanzableSinAccidente);
+        return;
+    }
+
+    CalcularRutasExistentes(grafo, origen->lugar.id, alcanzableSinAccidente, 0);
+    CalcularRutasExistentes(grafo, origen->lugar.id, alcanzableConAccidente, 1);
+
     printf("Seleccionar Destino\n");
-    Vertice *destino = SeleccionarVerticePorNombre(grafo, "Destino");
+    Vertice *destino = SeleccionarVerticePorNombre(grafo, "Destino", alcanzableSinAccidente, alcanzableConAccidente);
 
     if(destino == NULL)
     {
         printf("Error al seleccionar destino intentelo nuevamente");
+        free(alcanzableConAccidente);
+        free(alcanzableSinAccidente);
         return; 
     }
 
@@ -661,6 +790,8 @@ void CalcularRuta(Grafo *grafo)
         free(dist);
         free(anterior);
         free(visitado);
+        free(alcanzableConAccidente);
+        free(alcanzableSinAccidente);
         return;
     }
 
@@ -728,6 +859,10 @@ void CalcularRuta(Grafo *grafo)
 
     if(dist[idDestino] >= 1e18){
         printf("\nNo existe ruta entre los puntos dados\n");
+
+        grafo->rutaCalculada = 0;
+
+        if(grafo->ultimaruta != NULL) list_clean(grafo->ultimaruta);
     }
 
     else
@@ -778,7 +913,6 @@ void CalcularRuta(Grafo *grafo)
 
             idAnteriorRuta = *id;
             free(id);
-            grafo -> hayRuta = 1;
         }
 
         grafo->rutaCalculada = 1;
@@ -786,102 +920,163 @@ void CalcularRuta(Grafo *grafo)
         printf("\nRuta calculada correctamente\n");
         printf("Ir a opcion 3 para ver informacion completa\n");
     }
+
+    free(dist);
+    free(anterior);
+    free(visitado);
+    free(heap);
+    free(alcanzableConAccidente);
+    free(alcanzableSinAccidente);
 }
 
 void mostrarInformacion(Grafo *grafo)
 {
-    //verificar que ya se calculo alguna ruta
-    if (grafo -> hayRuta == 0 || grafo -> ultimaRuta == NULL){
-        printf("Se debe calcular una ruta antes de usar esta opcion\n");
+    if(grafo == NULL)
+    {
+        printf("Error Grafo no inicializado");
+        return;
+    }
+    if(grafo->rutaCalculada == 0 || grafo->ultimaruta == NULL)
+    {
+        printf("Primero Calcula una ruta en la Opcion 2.\n");
         return;
     }
 
-    double totalDistancia = 0;
-    float tiempoAuto = 0;
-    float tiempoBici = 0;
-    float tiempoPie = 0;
-    float combustible = 0;
+    printf("\n========== INFORMACION DE LA ULTIMA RUTA ==========\n");
+    printf("\nCamino calculado:\n");
+    printf("---------------------------------------------------\n");
 
-    printf("\nRuta calculada:\n");
-    printf("========================================\n");
+    int contador = 1; 
+    Vertice *v = list_first(grafo->ultimaruta);
+    
+    while(v != NULL)
+    {
+        printf("%d) ID: %d | %s | Lat: %.6f | Lon: %.6f\n", contador, v->lugar.id, v->lugar.nombre, v->lugar.latitud, v->lugar.longitud);
 
-    int *idActual = list_first(grafo -> ultimaRuta);
-    int *idSiguiente = list_next(grafo -> ultimaRuta);
+        Vertice *siguiente = list_next(grafo->ultimaruta);
 
-    while(idActual != NULL){
-        Vertice *v = grafo -> porId[*idActual];
-        if (v != NULL){
-            printf("-> %s (%.6f, %.6f)\n", v -> lugar.nombre, v -> lugar.latitud, v -> lugar.longitud);
-        }
+        if(siguiente != NULL) printf("                         %s|%s\n", AMARILLO, RESET);
 
-        //si hay un vertice siguiente se busca la conexion entre ambos y se suma al total (dist, tiempo y combustible)
-        
-        if(idSiguiente != NULL){
-            Vertice *vActual = grafo -> porId[*idActual];
-            if (vActual != NULL){
-                Conexion *conexion = list_first(vActual -> conexiones);
-                while(conexion != NULL){
-                    if (conexion -> destino == *idSiguiente){
-                        totalDistancia += conexion -> distanciaKm;
-                        tiempoAuto += conexion -> tiempoAuto;
-                        tiempoBici += conexion -> tiempoBici;
-                        tiempoPie += conexion -> tiempoPie;
-                        combustible += conexion -> combustibleAuto;
-                        break;
-                        
-                    }
-                    conexion = list_next(vActual -> conexiones);
-                }
-            }
-        }
-        idActual = idSiguiente;
-        idSiguiente = list_next(grafo -> ultimaRuta);
+        contador ++;
+        v = siguiente; 
     }
-    printf("========================================\n");
-    printf("Distancia total : %.3f km\n", totalDistancia);
-    printf("Tiempo en auto : %.1f min\n", tiempoAuto * 60);
-    printf("Tiempo en bici : %.1f min\n", tiempoBici * 60);
-    printf("Tiempo a pie : %.1f min\n", tiempoPie * 60);
-    printf("Combustible aprox. : %.3f L\n", combustible);
+
+     printf("\n========== RESUMEN DE LA RUTA ==========\n");
+     printf("Distancia Total: %.3fKm \n", grafo->ultimaDistanciaKm);
+     printf("Tiempo estimado en auto: %.1fMin \n", grafo->ultimoTiempoAuto * 60);
+     printf("Tiempo estimado en bicicleta: %.1fMin \n", grafo->ultimoTiempoBici * 60); 
+     printf("Tiempo estimado caminando: %.1fMin \n", grafo->ultimoTiempoPie * 60);
+     printf("Combustible aproximado en auto: %.3fL \n", grafo->ultimoCombustible);
+     printf("==========================================\n");
     
 }
 
-void reportarAccidente(Grafo *grafo){
-    if (grafo == NULL || grafo -> cantidadVertices == 0){
+void reportarAccidente(Grafo *grafo)
+{
+    if (grafo == NULL || grafo -> cantidadVertices == 0)
+    {
         printf("Primero debes cargar los datos\n");
         return;
     }
 
     //se ingresan los ids de origen y destino de la conexion a bloquear
     int idOrigen, idDestino;
-    printf("Ingrese el id de Origen: ");
-    scanf("%d", &idOrigen);
-    printf("Ingrese el id de Destino: ");
-    scanf("%d", &idDestino);
 
-    if(idOrigen < 0 || idOrigen >= grafo -> cantidadVertices || idDestino < 0 || idDestino >= grafo -> cantidadVertices){
-        printf("La calle indicada no existe en el mapa\n");
-        return;
+    printf("\n========== REPORTAR ACCIDENTE ==========\n");
+    
+    printf("Ingrese el ID de la calle afectada Origen: ");
+    scanf("%d", &idOrigen);
+
+     if(idOrigen < 0 || idOrigen >= grafo->cantidadVertices || grafo->porId[idOrigen] == NULL)
+    {
+        printf("ID de origen invalido\n");
+        return; 
     }
 
     Vertice *verticeOrigen = grafo -> porId[idOrigen];
-    if(verticeOrigen == NULL){
-        printf("La calle indicada no existe en el mapa\n");
+    
+    printf("\n Calle origen seleccionado\n");
+    printf("ID: %d | %s | Lat: %.6f | Lon: %.6f\n", verticeOrigen->lugar.id, verticeOrigen->lugar.nombre, verticeOrigen->lugar.latitud, verticeOrigen->lugar.longitud);
+
+    printf("\nConexiones cercanas desde este origen\n");
+    printf("=====================================================================================\n");
+    printf("%-10s | %-30s | %-12s | %-12s | %-10s\n", "Destino", "Nombre", "Latitud", "Longitud", "Estado");
+    printf("=====================================================================================\n");
+
+
+    int cantidad_Conexiones = 0;
+
+    Conexion *conexion = list_first(verticeOrigen -> conexiones);
+    
+    while(conexion != NULL)
+    {
+        int idVecino = conexion->destino;
+
+        if(idVecino >= 0 && idVecino < grafo->cantidadVertices && grafo->porId[idVecino] != NULL)
+        {
+            Vertice *vecino = grafo->porId[idVecino];
+
+            printf("%-10d | %-30s | %-12.6f | %-12.6f | %-10s\n", vecino->lugar.id, vecino->lugar.nombre, vecino->lugar.latitud, vecino->lugar.longitud, conexion->bloqueada == 1 ? "ACCIDENTE" : "LIBRE");
+
+            cantidad_Conexiones ++; 
+        }
+
+        conexion = list_next(verticeOrigen->conexiones);
+    
+    }
+
+    printf("=====================================================================================\n");
+
+    if(cantidad_Conexiones == 0) 
+    {
+        printf("Esta calle no tiene conexiones salientes\n");
         return;
     }
 
-    Conexion *conexion = list_first(verticeOrigen -> conexiones);
-    while(conexion != NULL){
-        if(conexion -> destino == idDestino){
-            conexion -> bloqueada = 1;
-            printf("Accidente reportado correctamente\n");
-            return;
-        }
-        conexion = list_next(verticeOrigen -> conexiones);
+    printf("\n Ingrese el ID de la calle afectada Destino: ");
+    scanf("%d", &idDestino); 
+
+    if(idDestino < 0 || idDestino >= grafo->cantidadVertices || grafo->porId[idDestino] == NULL)
+    {
+        printf("ID de destino invalido\n");
+        return; 
     }
-    printf("La calle indicada no existe en el mapa\n");
-    return;
-    
+
+    Conexion *conexionAccidente = buscarConexionEntre(grafo, idOrigen, idDestino);
+
+    if(conexionAccidente == NULL)
+    {
+        printf("\nNo existe una conexion directa entre %d y %d\n", idOrigen, idDestino);
+        printf("Porfavor selecciona un destino de la tabla");    
+    }
+
+    if(conexionAccidente->bloqueada == 1)
+    {
+        printf("\nEste segmento ya tiene un accidente reportado");
+        return;
+    }
+
+    conexionAccidente->bloqueada = 1;
+    int bloqueodevuelta = 0;
+    Conexion *conexionVuelta = buscarConexionEntre(grafo, idDestino, idOrigen);
+
+    if(conexionVuelta != NULL)
+    {
+        conexionVuelta->bloqueada = 1;
+        bloqueodevuelta = 1;
+    }
+
+    grafo->rutaCalculada = 0;
+
+    if(grafo->ultimaruta != NULL) list_clean(grafo->ultimaruta); 
+
+    printf("\nAccidente reportado correctamente\n");
+    printf("Segmento de calle bloqueado %d -> %d\n", idOrigen, idDestino);
+
+    if(bloqueodevuelta == 1) printf("Tambien se bloqueo la vuelta: %d -> %d\n", idDestino, idOrigen);
+    else printf("No existia vuelta, solo se bloqueo una sola direccion");
+
+    printf("Ultima ruta fue innvalidad porfavor vuelva a calcular la ruta"); 
 }
 
 /*

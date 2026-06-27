@@ -198,16 +198,14 @@ Donde debera de ingresar el nombre de la calle de origen:
 ### EJEMPLO:
 
 ```bash
-Ingrese Nombre de calle para Origen: Pacifico
+Ingrese Nombre de calle para Origen: Placeres
 ```
-
-
 
 De modo que quede asi:
 
 ![Ejemplo](img/imagenEjemploDeNombreCalleDeOrigen.png)
 
-Posterior a esto, saldra el siguiente submenu con informacion de; Coincidencias de calles encontradas con respecto al nombre que ingreso:
+Posterior a esto, debera de indicar el nombre de la calle de destino, el cual como ejemplo se decidio usar: Yungay
 
 ![Coincidencias De Calles Encontradas](img/imagenSubmenuRutaDeOrigen_ID_COORDENADAS.png)
 
@@ -260,7 +258,7 @@ Ingrese Nombre de calle para Destino: Libertad
 - Apoyo en la integración del HashMap como índice de coordenada para evitar vértices duplicados.
 - Apoyo en la prueba final del programa.
 
-## Martin Astorga:
+Martin Astorga:
 - Participación en la planificación general del proyecto y definición de idea.
 - Revisión de coherencia entre código, documentación y exposición.
 - Trabajo por implementar principalmente “cálculo de ruta”, selección de origen y destino, validación de entrada de usuario y visualización en consola en la función “mostrar información”,“reportar accidentes”.
@@ -269,7 +267,7 @@ Ingrese Nombre de calle para Destino: Libertad
 - Documentación de las nuevas funcionalidades implementadas.
 - Apoyo en la prueba final del programa.
 
-## Diego Rojas:
+Diego Rojas:
 - Participación en la planificación general del proyecto y definición de idea.
 - Trabajo en la presentación.
 - Trabajo en la redacción y organización del informe.

@@ -1,4 +1,4 @@
-\# ROUTEMAPPER
+# ROUTEMAPPER
 
 
 
@@ -6,7 +6,7 @@ ROUTEMAPPER utiliza datos reales obtenidos desde OpenStreetMap para modelar la r
 
 
 
-\## Fuente de datos
+## Fuente de datos
 
 
 
@@ -22,11 +22,11 @@ Para ser mas especifico, en el sig link se encuentra la descarga directa de la b
 
 
 
-\---
+---
 
 
 
-\## Dependencias
+## Dependencias
 
 
 
@@ -79,11 +79,11 @@ data/
 
 
 
-\---
+---
 
 
 
-\## Estructura de la base de datos
+## Estructura de la base de datos
 
 
 
@@ -91,7 +91,7 @@ La base de datos contiene múltiples tablas de interés para el proyecto.
 
 
 
-\### `gis_osm_roads_free`
+### `gis_osm_roads_free`
 
 
 
@@ -130,11 +130,11 @@ Campos relevantes:
 
 
 
-\---
+---
 
 
 
-\## Estructuras de datos utilizadas
+## Estructuras de datos utilizadas
 
 
 
@@ -156,11 +156,11 @@ Las principales estructuras de datos implementadas son:
 
 
 
-\---
+---
 
 
 
-\## Compilación
+## Compilación
 
 
 
@@ -170,7 +170,7 @@ Compilar el proyecto con:
 
 ```bash
 COMANDO: gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
-\---
+---
 
 
 Ejecutar el proyecto desde la terminal con:
@@ -179,12 +179,12 @@ Ejecutar el proyecto desde la terminal con:
 
 ```bash
 COMANDO: ./ROUTEMAPPER.exe
-\---
+---
 
 
 
 
-\## EXPLICACION DE USO:
+## EXPLICACION DE USO:
 
 Una vez ya descargado la base de datos (chile.gpkg) y guardado en su carpeta correspondiente dentro del proyecto (data/), de manera que quede asi (data/chile.gpkg), ya podemos compilar este proyecto para luego ser ejecutado (como se indico en los pasos anteriores).
 
@@ -206,7 +206,7 @@ Donde debera de ingresar el nombre de la calle de origen:
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Origen: Pacifico
-\---
+---
 
 De modo que quede asi:
 
@@ -224,16 +224,16 @@ Si elige la opcion numero 1), debera de ingresar el ID de la calle de origen a s
 
 ```EJEMPLO:
 Ingrese ID: 7706
-\---
+---
 
 Posterior a esto, debera de ingresar el nombre de la calle para destino
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad
-\---
+---
 
 Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS, en este ejemplo ahora se seleccionara la opcion 2) (coordenadas), donde debera de ingresar la longitud y latitud de donde se encuentra la calle de destino a buscar
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad
-\---
+---

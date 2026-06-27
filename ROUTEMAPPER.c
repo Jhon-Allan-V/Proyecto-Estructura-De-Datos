@@ -1047,7 +1047,8 @@ void reportarAccidente(Grafo *grafo)
     if(conexionAccidente == NULL)
     {
         printf("\nNo existe una conexion directa entre %d y %d\n", idOrigen, idDestino);
-        printf("Porfavor selecciona un destino de la tabla");    
+        printf("Por favor selecciona un destino de la tabla");
+        return;
     }
 
     if(conexionAccidente->bloqueada == 1)
@@ -1076,7 +1077,7 @@ void reportarAccidente(Grafo *grafo)
     if(bloqueodevuelta == 1) printf("Tambien se bloqueo la vuelta: %d -> %d\n", idDestino, idOrigen);
     else printf("No existia vuelta, solo se bloqueo una sola direccion");
 
-    printf("Ultima ruta fue innvalidad porfavor vuelva a calcular la ruta"); 
+    printf("Ultima ruta fue invalidad por favor vuelva a calcular la ruta"); 
 }
 
 /*

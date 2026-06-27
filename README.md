@@ -205,33 +205,42 @@ De modo que quede asi:
 
 ![Ejemplo](img/imagenEjemploDeNombreCalleDeOrigen.png)
 
-Posterior a esto, debera de indicar el nombre de la calle de destino, el cual como ejemplo se decidio usar: Yungay
+Posterior a esto, debera de elegir cualquiera de las dos opciones:
 
-![Coincidencias De Calles Encontradas](img/imagenSubmenuRutaDeOrigen_ID_COORDENADAS.png)
-
-En el cual tendra dos opciones a elegir:
 1) para: Seleccionar por ID
 2) para: Seleccionar por Coordenadas exactas
 
 Usted debera de elegir la opcion que mas le plasca
 
 ### EJEMPLO:
-Ingrese ID: 7706
+seleccionar opcion: 1
+Ingrese ID: 3965
 
 Posterior a esto, debera de ingresar el nombre de la calle para destino
 
 ### EJEMPLO:
-Ingrese Nombre de calle para Destino: Libertad
+Ingrese Nombre de calle para Destino: Yungay
 
 
-Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS, en este ejemplo ahora se seleccionara la opcion 2) (coordenadas), donde debera de ingresar la longitud y latitud de donde se encuentra la calle de destino a buscar
+Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS
 
 ### EJEMPLO:
-Ingrese Nombre de calle para Destino: Libertad
+seleccionar opcion: 1
+
+Ingrese ID: 1360494
+
+De modo que quede asi
+
+![Cargar Ruta Exitoso](img/imagenCalcularRutaExitoso.png)
 
 
+Luego podremos volver al Menu principal para marcar la opcion 3, el cual nos entregara la informacion de este camino
 
+![Resultado Caminos](img/imagenInformacionCamino.png)
 
+Y por ultimo esta la opcion 4, con la cual podemos indicar que calles estan bloqueadas mediante el id de estas
+
+![Reporte](img/imagenReporte.png)
 
 ### APORTE DE CADA INTEGRANTE EN EL PROYECTO:
 

@@ -16,6 +16,10 @@ Los datos geográficos utilizados por el proyecto provienen de Geofabrik:
 
 🔗 https://download.geofabrik.de/south-america/chile.html
 
+Para ser mas especifico, en el sig link se encuentra la descarga directa de la base de datos a procesar:
+
+🔗 https://download.geofabrik.de/south-america/chile-latest-free.gpkg.zip
+
 
 
 \---
@@ -54,69 +58,12 @@ sqlite-amalgamation-3530200.zip
 
 
 
-Dentro del proyecto solo se utilizan los siguientes archivos:
-
-
-
-```
-
-libSqlite3/
-
-├── sqlite3.c
-
-└── sqlite3.h
-
-```
-
-
-
-\---
-
-
-
-\## Archivos requeridos
-
-
-
-El programa necesita los siguientes archivos dentro del directorio `data/`:
-
-
-
-```
-
-data/
-
-├── chile-latest-free.gpkg
-
-└── limitesChile.txt
-
-```
-
-
-
-\### Descripción
-
-
-
-| Archivo | Descripción |
-
-|----------|-------------|
-
-| `chile-latest-free.gpkg` | Base de datos geográfica de Chile obtenida desde OpenStreetMap. |
-
-| `limitesChile.txt` | Archivo de texto que contiene los límites geográficos de Chile. |
-
-
-
-\---
-
-
 
 \## Configuración inicial
 
 
 
-Debido al tamaño del archivo `.gpkg`, este no pudo ser incluido en el repositorio mediante GitHub.
+Debido al tamaño del archivo `chile.gpkg`, este no pudo ser incluido en el repositorio mediante GitHub.
 
 
 
@@ -178,21 +125,6 @@ Campos relevantes:
 
 
 
-\### `gis_osm_places_free`
-
-
-
-Contiene aproximadamente \*\*18.176 lugares y puntos geográficos\*\*.
-
-
-
-\### `gis_osm_pois_free`
-
-
-
-Contiene puntos de interés (POI) que pueden utilizarse para realizar búsquedas de origen y destino por nombre.
-
-
 
 > \*\*Nota:\*\* La información proviene de OpenStreetMap, por lo que no se garantiza una cobertura o precisión absoluta en todas las zonas del país.
 
@@ -237,18 +169,71 @@ Compilar el proyecto con:
 
 
 ```bash
-NUEVO : gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+COMANDO: gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
+\---
 
 
-ANTIGUO : gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/map.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
-
-```
+Ejecutar el proyecto desde la terminal con:
 
 
 
+```bash
+COMANDO: ./ROUTEMAPPER.exe
 \---
 
 
 
 
+\## EXPLICACION DE USO:
 
+Una vez ya descargado la base de datos (chile.gpkg) y guardado en su carpeta correspondiente dentro del proyecto (data/), de manera que quede asi (data/chile.gpkg), ya podemos compilar este proyecto para luego ser ejecutado (como se indico en los pasos anteriores).
+
+Una vez abierto, veras la siguiente interfaz o menu:
+
+![Menu Principal](img/imagenMenuPrincipal.png)
+
+
+Donde primero deberas de digitar en la terminal la opcion numero (1), la cual carga la informacion necesaria de la base de datos, dandonos un pequeño informe con el total de datos cargados.
+
+![Datos Cargados](img/imagenDeInformeDatosCargados.png)
+
+
+Despues de cargar la informacion, ya podremos hacer consulta de rutas; atraves de la opcion numero (2) "Calcular ruta", al digitalizar el numero (2) en la terminal, saldra el siguiente submenu:
+
+![Sub Menu](img/imagenSubmenuDigitarNombreDeCalle.png)
+
+Donde debera de ingresar el nombre de la calle de origen:
+
+```EJEMPLO:
+Ingrese Nombre de calle para Origen: Pacifico
+\---
+
+De modo que quede asi:
+
+![Ejemplo](img/imagenEjemploDeNombreCalleDeOrigen.png)
+
+Posterior a esto, saldra el siguiente submenu con informacion de; Coincidencias de calles encontradas con respecto al nombre que ingreso:
+
+![Coincidencias De Calles Encontradas](img/imagenSubmenuRutaDeOrigen_ID_COORDENADAS.png)
+
+En el cual tendra dos opciones a elegir:
+1) para: Seleccionar por ID
+2) para: Seleccionar por Coordenadas exactas
+
+Si elige la opcion numero 1), debera de ingresar el ID de la calle de origen a seleccionar
+
+```EJEMPLO:
+Ingrese ID: 7706
+\---
+
+Posterior a esto, debera de ingresar el nombre de la calle para destino
+
+```EJEMPLO:
+Ingrese Nombre de calle para Destino: Libertad
+\---
+
+Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS, en este ejemplo ahora se seleccionara la opcion 2) (coordenadas), donde debera de ingresar la longitud y latitud de donde se encuentra la calle de destino a buscar
+
+```EJEMPLO:
+Ingrese Nombre de calle para Destino: Libertad
+\---

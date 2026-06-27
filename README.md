@@ -22,19 +22,17 @@ Para ser mas especifico, en el sig link se encuentra la descarga directa de la b
 
 
 
----
-
 
 
 ## Dependencias
 
 
 
-El proyecto utiliza \*\*SQLite3\*\* para consultar la información almacenada en la base de datos geográfica ubicada en el directorio `data/`.
+El proyecto utiliza **SQLite3** para consultar la información almacenada en la base de datos geográfica ubicada en el directorio `data/`.
 
 
 
-\### Descargar SQLite3
+### Descargar SQLite3
 
 
 
@@ -59,7 +57,7 @@ sqlite-amalgamation-3530200.zip
 
 
 
-\## Configuración inicial
+## Configuración inicial
 
 
 
@@ -79,7 +77,6 @@ data/
 
 
 
----
 
 
 
@@ -95,7 +92,7 @@ La base de datos contiene múltiples tablas de interés para el proyecto.
 
 
 
-Contiene aproximadamente \*\*1.001.470 segmentos de vía\*\*.
+Contiene aproximadamente **1.001.470 segmentos de vía**.
 
 
 
@@ -126,11 +123,9 @@ Campos relevantes:
 
 
 
-> \*\*Nota:\*\* La información proviene de OpenStreetMap, por lo que no se garantiza una cobertura o precisión absoluta en todas las zonas del país.
+> **Nota:** La información proviene de OpenStreetMap, por lo que no se garantiza una cobertura o precisión absoluta en todas las zonas del país.
 
 
-
----
 
 
 
@@ -156,8 +151,6 @@ Las principales estructuras de datos implementadas son:
 
 
 
----
-
 
 
 ## Compilación
@@ -170,7 +163,6 @@ Compilar el proyecto con:
 
 ```bash
 COMANDO: gcc ROUTEMAPPER.c tdas/extra.c tdas/heap.c tdas/list.c tdas/hashmap.c libSqlite3/sqlite3.c -o ROUTEMAPPER -lm
----
 
 
 Ejecutar el proyecto desde la terminal con:
@@ -179,7 +171,6 @@ Ejecutar el proyecto desde la terminal con:
 
 ```bash
 COMANDO: ./ROUTEMAPPER.exe
----
 
 
 
@@ -206,7 +197,6 @@ Donde debera de ingresar el nombre de la calle de origen:
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Origen: Pacifico
----
 
 De modo que quede asi:
 
@@ -224,16 +214,14 @@ Si elige la opcion numero 1), debera de ingresar el ID de la calle de origen a s
 
 ```EJEMPLO:
 Ingrese ID: 7706
----
 
 Posterior a esto, debera de ingresar el nombre de la calle para destino
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad
----
+
 
 Ahora debera de volver a contestar si desea buscar el punto (pero ahora de destino), en ID o COORDENADAS, en este ejemplo ahora se seleccionara la opcion 2) (coordenadas), donde debera de ingresar la longitud y latitud de donde se encuentra la calle de destino a buscar
 
 ```EJEMPLO:
 Ingrese Nombre de calle para Destino: Libertad
----

@@ -631,4 +631,45 @@ Algunas mejoras posibles son:
 - Agregar un sistema de tráfico simulado.
 ---
 
+### APORTE DE CADA INTEGRANTE EN EL PROYECTO:
 
+## Roberto Osses:
+- Participación en la planificación general del proyecto y definición de idea.
+- Trabajo en la presentación.
+- Trabajo en la redacción y organización del informe.
+- Apoyo en el diseño del grafo como una estructura para representar la red vial.
+- Apoyo en la creación de vértices a partir de coordenadas.
+- Implementación de la función que trata los grados como radianes.
+- Implementación de la función que calcula la distancia entre 2 puntos mediante la fórmula de Haversine.
+- Apoyo en la función que se encarga de guardar los datos dentro del grafo.
+- Organización como equipo y planificación de futuras tareas.
+- Apoyo en la prueba final del programa.
+
+## Jhon Veliz:
+- Participación en la planificación general del proyecto y definición de idea.
+- Trabajo en la presentación.
+- Trabajo en la redacción y organización del informe.
+- Investigación del mapa de Chile, exportando como GeoPackage.
+- Implementación de la carga de datos mediante SQLite.
+- Extracción de las rutas de la tabla obtenida en OpenStreetMap.
+- Trabajo en conjunto para la funciones creación de vértices y cálculo de distancias e inserción de conexiones hacia el grafo.
+- Apoyo en la integración del HashMap como índice de coordenada para evitar vértices duplicados.
+- Apoyo en la prueba final del programa.
+
+Martin Astorga:
+- Participación en la planificación general del proyecto y definición de idea.
+- Revisión de coherencia entre código, documentación y exposición.
+- Trabajo por implementar principalmente “cálculo de ruta”, selección de origen y destino, validación de entrada de usuario y visualización en consola en la función “mostrar información”,“reportar accidentes”.
+- Trabajo en la redacción y organización del informe.
+- Trabajo en la presentación.
+- Documentación de las nuevas funcionalidades implementadas.
+- Apoyo en la prueba final del programa.
+
+Diego Rojas:
+- Participación en la planificación general del proyecto y definición de idea.
+- Trabajo en la presentación.
+- Trabajo en la redacción y organización del informe.
+- Trabajo por implementar principalmente “cálculo de ruta”, selección de origen y destino, validación de entrada de usuario y visualización en consola en la función “mostrar información, “reportar accidentes”.
+- Apoyo pendiente en la integración del heap como cola de prioridad para Dijkstra.
+- Documentación de las nuevas funcionalidades implementadas.
+- Apoyo en la prueba final del programa.
